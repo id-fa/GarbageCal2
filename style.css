@@ -365,6 +365,11 @@ p {
   color: var(--muted);
 }
 
+/* 空欄の曜日の文言を大きくする設定（noneTextLarge）のとき */
+.garbage.large {
+  font-size: min(6.8cqw, 6.2cqh);
+}
+
 .info-tomorrow {
   margin-top: min(3.5cqw, 3cqh);
   padding-top: min(3.5cqw, 3cqh);
@@ -377,6 +382,10 @@ p {
 
 .info-tomorrow .garbage {
   font-size: min(4.6cqw, 4.2cqh);
+}
+
+.info-tomorrow .garbage.large {
+  font-size: min(6cqw, 5.4cqh);
 }
 
 /* ---- 時計 ---- */

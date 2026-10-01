@@ -225,6 +225,7 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
           ),
           labeled('空欄の曜日', textField(garbage, 'noneText')),
         ),
+        checkField(garbage, 'noneTextLarge', '空欄の曜日の文言を大きい文字で表示する'),
       ),
       group(
         '第n曜日だけの収集（資源ごみなど）',

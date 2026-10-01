@@ -20,6 +20,8 @@ export function defaultSettings() {
       // 日曜〜土曜の表示文言。空欄の曜日は noneText を表示する
       weekly: ['', '', '', '', '', '', ''],
       noneText: 'ゴミは出せません',
+      // noneText を大きい文字で表示する
+      noneTextLarge: false,
       // 第n○曜日のルール: { weekday, weeks: [1..5], text, offText }
       rules: [],
       // 収集休み期間: { from, to, yearly, label }
@@ -65,6 +67,7 @@ export function normalizeSettings(raw) {
       enabled: bool(garbage.enabled, defaults.garbage.enabled),
       weekly: defaults.garbage.weekly.map((_, i) => text(garbage.weekly?.[i], 40)),
       noneText: text(garbage.noneText, 40) || defaults.garbage.noneText,
+      noneTextLarge: bool(garbage.noneTextLarge, defaults.garbage.noneTextLarge),
       rules: list(garbage.rules)
         .map((rule) => ({
           weekday: int(rule?.weekday, 0, 6, 0),

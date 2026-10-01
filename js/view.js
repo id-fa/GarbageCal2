@@ -55,7 +55,9 @@ export function eraText(year, display) {
 // ---- 今日・明日の情報 ----
 
 function garbageBadge(info) {
-  return info && h('p', { class: info.collected ? 'garbage' : 'garbage none' }, info.text);
+  if (!info) return null;
+  const classes = ['garbage', !info.collected && 'none', info.large && 'large'];
+  return h('p', { class: classes.filter(Boolean).join(' ') }, info.text);
 }
 
 function weekdayLabel(date, display) {
