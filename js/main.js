@@ -3,8 +3,14 @@
 import { now, syncClock } from './clock.js';
 import { addMonths, jstParts } from './dates.js';
 import { loadBundledHolidays, refreshHolidays } from './holidays.js';
-import { applySettingsFromUrl, loadSettings, saveSettings } from './settings.js';
-import { setupSettingsDialog } from './settings-ui.js';
+import {
+  acceptUrlSettings,
+  loadSettings,
+  readUrlSettings,
+  saveSettings,
+  serializeSettings,
+} from './settings.js';
+import { setupSettingsDialog, setupUrlSettingsDialog } from './settings-ui.js';
 import {
   createAnalogClock,
   digitalText,
@@ -31,6 +37,7 @@ const els = {
   fullscreen: $('fullscreen'),
 };
 const setAnalogClock = createAnalogClock($('analog'));
+const urlSettingsDialog = setupUrlSettingsDialog($('url-settings-dialog'));
 
 let settings = loadSettings();
 // 表示中の月 { y, m }。null なら今月に追従する
@@ -95,10 +102,19 @@ async function backgroundCheck() {
   await refreshHolidaysAndRender();
 }
 
+// URLに未適用の設定が付いていれば、確認を取ってから取り込む
 async function applyUrlSettings() {
-  const fromUrl = await applySettingsFromUrl(location.hash);
-  if (!fromUrl) return;
-  settings = fromUrl;
+  const pending = await readUrlSettings(location.hash);
+  if (!pending) return;
+  if (!pending.settings) {
+    urlSettingsDialog.tooLong();
+    return;
+  }
+  // いまの設定と同じ内容なら尋ねるまでもないので、適用済みとして記録だけする
+  const unchanged = serializeSettings(pending.settings) === serializeSettings(settings);
+  if (!unchanged && !(await urlSettingsDialog.confirm(pending.settings))) return;
+  acceptUrlSettings(pending);
+  settings = pending.settings;
   render();
 }
 

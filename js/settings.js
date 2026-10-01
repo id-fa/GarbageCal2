@@ -7,6 +7,9 @@ import { readJson, writeJson } from './storage.js';
 const STORAGE_KEY = 'sgcal.settings';
 const APPLIED_URL_KEY = 'sgcal.appliedUrlConfig';
 const URL_PARAM = 'cfg';
+// 設定付きURLに載せられる cfg の文字数。これを超える設定は JSON ファイルで渡してもらう。
+// 受け取る側も同じ上限で弾くので、細工されたURLでも展開後のサイズは高々 1.5MB ほどに収まる。
+const MAX_URL_PARAM_LENGTH = 2000;
 const MAX_LIST_ITEMS = 50;
 
 // カレンダー上の「今日」の目立たせ方。style.css の .today-<名前> と対応する
@@ -177,26 +180,36 @@ export async function decodeSettingsParam(param) {
   return parseSettingsJson(new TextDecoder().decode(bytes));
 }
 
+// 設定付きURLを作る。設定が大きすぎてURLに載せられないときは null。
 export async function buildSettingsUrl(settings, baseUrl) {
+  const param = await encodeSettingsParam(settings);
+  if (param.length > MAX_URL_PARAM_LENGTH) return null;
   const url = new URL(baseUrl);
   url.search = '';
-  url.hash = `${URL_PARAM}=${await encodeSettingsParam(settings)}`;
+  url.hash = `${URL_PARAM}=${param}`;
   return url.href;
 }
 
-// URLに設定が付いていれば取り込んで保存し、その設定を返す（無い・適用済み・壊れている場合は null）。
-// 同じURLの設定は一度しか適用しない。ホームURLに設定したまま端末側で設定を編集しても、
-// 次に開いたときにURLの内容で巻き戻らないようにするため。
-export async function applySettingsFromUrl(hash) {
+// URLに付いている、まだ適用していない設定を読む（無い・適用済み・壊れている場合は null）。
+// 戻り値は { param, settings }。大きすぎて受け付けない場合は settings が null。
+// URLを開いただけで設定が書き換わらないよう、ここでは保存しない。
+// 利用者に確認したうえで acceptUrlSettings() に渡す。
+export async function readUrlSettings(hash) {
   const param = new URLSearchParams(hash.replace(/^#/, '')).get(URL_PARAM);
   if (!param || param === readJson(APPLIED_URL_KEY)) return null;
+  if (param.length > MAX_URL_PARAM_LENGTH) return { param, settings: null };
   try {
-    const settings = await decodeSettingsParam(param);
-    saveSettings(settings);
-    writeJson(APPLIED_URL_KEY, param);
-    return settings;
+    return { param, settings: await decodeSettingsParam(param) };
   } catch (error) {
     console.warn('URLの設定を読み込めませんでした', error);
     return null;
   }
+}
+
+// readUrlSettings() で読んだ設定を保存する。
+// 同じURLの設定は一度しか適用しない。ホームURLに設定したまま端末側で設定を編集しても、
+// 次に開いたときにURLの内容で巻き戻らないようにするため。
+export function acceptUrlSettings({ param, settings }) {
+  saveSettings(settings);
+  writeJson(APPLIED_URL_KEY, param);
 }

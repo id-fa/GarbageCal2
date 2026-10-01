@@ -205,6 +205,72 @@ function group(title, hint, ...children) {
   );
 }
 
+// 設定付きURLを開いたときのダイアログ。URLを開いただけでは設定を書き換えず、ここで確認を取る。
+export function setupUrlSettingsDialog(dialog) {
+  const body = dialog.querySelector('.settings-body');
+  const footer = dialog.querySelector('.settings-footer');
+  // 表示中のダイアログの結果を返す関数（表示していなければ null）
+  let settle = null;
+
+  function finish(result) {
+    settle?.(result);
+    settle = null;
+    if (dialog.open) dialog.close();
+  }
+
+  // Esc や端末の「戻る」で閉じられたときは、取り込まない扱いにする
+  dialog.addEventListener('close', () => finish(false));
+
+  function show(content, buttons) {
+    // 表示中に別のURLが来たら、前の問い合わせは取り込まない扱いにして中身を差し替える
+    settle?.(false);
+    body.replaceChildren(...content);
+    footer.replaceChildren(...buttons);
+    if (!dialog.open) dialog.showModal();
+    return new Promise((resolve) => {
+      settle = resolve;
+    });
+  }
+
+  const button = (label, result, attrs) =>
+    h('button', { type: 'button', class: 'button', ...attrs, onclick: () => finish(result) }, label);
+
+  return {
+    // 取り込んでよいか尋ねる。取り込むなら true。
+    confirm(settings) {
+      const { memos } = settings;
+      return show(
+        [
+          h('p', null, 'このURLには設定が含まれています。取り込むと、いまの設定（ごみの曜日やメモなど）はすべて置き換わり、元に戻せません。'),
+          h('p', { class: 'hint' }, '心当たりのないURLのときは「取り込まない」を選んでください。'),
+          memos.length > 0 && h('p', null, `取り込まれるメモ（${memos.length}件）`),
+          // 何が表示されるようになるか判断できるよう、リンクにはせず文字のまま見せる
+          memos.length > 0 &&
+            h(
+              'ul',
+              { class: 'url-memos' },
+              memos.map((memo) => h('li', null, memo.text)),
+            ),
+        ].filter(Boolean),
+        [
+          button('取り込まない', false, { autofocus: true }),
+          button('取り込む', true, { class: 'button primary' }),
+        ],
+      );
+    },
+    // URLの設定が大きすぎて取り込めないことを知らせる
+    tooLong() {
+      return show(
+        [
+          h('p', null, 'このURLの設定は大きすぎるため取り込めません。'),
+          h('p', null, '元の端末の設定画面で「エクスポート」したファイルを、この端末の設定画面の「インポート」で読み込んでください。'),
+        ],
+        [button('閉じる', false, { autofocus: true })],
+      );
+    },
+  };
+}
+
 export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, onRefreshHolidays }) {
   const body = dialog.querySelector('.settings-body');
   let draft = null;
@@ -406,11 +472,13 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
             class: 'button',
             onclick: async () => {
               const base = location.origin + location.pathname;
-              urlOutput.value = await buildSettingsUrl(normalizeSettings(draft), base);
-              urlOutput.hidden = false;
-              copyButton.hidden = false;
-              notice.textContent =
-                'このURLをタブレットのブラウザのホームに設定すると、この設定で表示されます。';
+              const url = await buildSettingsUrl(normalizeSettings(draft), base);
+              urlOutput.value = url ?? '';
+              urlOutput.hidden = !url;
+              copyButton.hidden = !url;
+              notice.textContent = url
+                ? 'このURLをタブレットのブラウザのホームに設定すると、この設定で表示されます。開いたときに、取り込むかどうかの確認が出ます。'
+                : '設定が大きすぎてURLにできません。「エクスポート」で保存したファイルを、移す先の端末で「インポート」してください。';
             },
           },
           '設定付きURLを作成',

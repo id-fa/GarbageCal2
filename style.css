@@ -717,6 +717,23 @@ p {
   margin-top: 8px;
 }
 
+.url-settings {
+  width: min(520px, calc(100vw - 24px));
+}
+
+.url-settings .settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+}
+
+.url-memos {
+  margin: 0;
+  padding-left: 1.4em;
+  overflow-wrap: anywhere;
+}
+
 .status {
   display: grid;
   grid-template-columns: auto 1fr;

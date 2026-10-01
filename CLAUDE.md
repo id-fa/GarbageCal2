@@ -50,6 +50,7 @@ console.log(computeHolidays(2026));
 - 設定項目を追加するときに触る場所: `defaultSettings()` → `normalizeSettings()` → `settings-ui.js` の入力欄 → 値を使う側。`migration/*.json` も `normalizeSettings()` を通して書き直しておく。古い保存データに項目が無くても既定値で埋まるので、移行処理は不要。
 - 設定ダイアログは下書き（`draft`）を編集し、「保存」で初めて反映する。入力欄は `draft` を直接書き換えるヘルパー（`textField` など）で作る。
 - 設定付きURL（`#cfg=…`）は同じ内容を一度しか適用しない（`sgcal.appliedUrlConfig` に記録）。ホームURLに設定したまま端末側で編集しても巻き戻らないようにするため。
+- 設定付きURLは開いただけでは適用しない。`readUrlSettings()` で読み、確認ダイアログで「取り込む」が選ばれてから `acceptUrlSettings()` で保存する（リンクを踏ませるだけで設定やメモを差し替えられないようにするため）。`cfg` は `MAX_URL_PARAM_LENGTH` 文字までで、作る側・受け取る側の両方で弾く。超える設定は JSON のエクスポート／インポートで渡す。
 
 ### 祝日
 
