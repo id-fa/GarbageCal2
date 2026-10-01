@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="シンプルなカレンダー付き時計">
+<meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121417" media="(prefers-color-scheme: dark)">
+<title>SGカレンダー</title>
+<link rel="icon" type="image/png" href="./favicon.ico">
+<link rel="icon" type="image/png" href="./android-touch-icon.png" sizes="152x152">
+<link rel="apple-touch-icon" href="./android-touch-icon.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- crossorigin を付けて CORS で読み込む（Service Worker が中身の見えるレスポンスとしてキャッシュできるように） -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@700&display=swap" crossorigin>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main class="app">
+  <section class="pane calendar-pane">
+    <header class="month-nav">
+      <button type="button" id="prev-month" class="nav-button" aria-label="前の月">‹</button>
+      <div class="month-heading">
+        <h1 id="month-title"></h1>
+        <button type="button" id="back-to-today" class="button" hidden>今月に戻す</button>
+      </div>
+      <button type="button" id="next-month" class="nav-button" aria-label="次の月">›</button>
+    </header>
+    <div id="calendar" class="calendar"></div>
+    <p id="era" class="era"></p>
+  </section>
+
+  <section class="pane side-pane">
+    <div id="info" class="info"></div>
+    <div class="clock">
+      <p id="digital" class="digital"></p>
+      <svg id="analog" class="analog" viewBox="-100 -100 200 200" role="img" aria-label="アナログ時計"></svg>
+    </div>
+    <div id="memos" class="memos" hidden></div>
+    <footer class="toolbar">
+      <button type="button" id="fullscreen" class="button subtle">全画面</button>
+      <button type="button" id="open-settings" class="button subtle">設定</button>
+    </footer>
+  </section>
+</main>
+
+<dialog id="settings-dialog" class="settings">
+  <header class="settings-header"><h2>設定</h2></header>
+  <div class="settings-body"></div>
+  <footer class="settings-footer">
+    <button type="button" class="button" data-action="cancel">キャンセル</button>
+    <button type="button" class="button primary" data-action="save">保存</button>
+  </footer>
+</dialog>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>

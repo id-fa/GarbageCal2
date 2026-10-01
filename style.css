@@ -1,0 +1,725 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ea;
+  --surface: #fffdf9;
+  --line: #e4ded1;
+  --text: #26241f;
+  --muted: #7b756a;
+  --sun: #cf3a3a;
+  --sat: #2a62c9;
+  --accent: #c8475d;
+  --on-accent: #fff;
+  --garbage-bg: #ffe9a8;
+  --garbage-text: #4d3a00;
+  --control: #ece7dc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121417;
+    --surface: #1c1f24;
+    --line: #32363d;
+    --text: #f1eee7;
+    --muted: #a09b90;
+    --sun: #ff8585;
+    --sat: #86b6ff;
+    --accent: #d9536b;
+    --garbage-bg: #5c4700;
+    --garbage-text: #ffe9a8;
+    --control: #2b2f36;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'BIZ UDPGothic', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
+  font-weight: 700;
+  -webkit-text-size-adjust: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.sun {
+  color: var(--sun);
+}
+
+.sat {
+  color: var(--sat);
+}
+
+/* ---- ボタン ---- */
+
+.button,
+.nav-button {
+  border: 0;
+  border-radius: 999px;
+  background: var(--control);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.button {
+  min-height: 44px;
+  padding: 0 1.2em;
+  font-size: 1rem;
+}
+
+.button.subtle {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.button.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.button:disabled {
+  opacity: 0.5;
+}
+
+/* ---- 全体レイアウト ----
+   小さい画面では縦に並べてスクロール。タブレット以上では画面ぴったりに収め、
+   縦向きは上下2段、横向きは左右2列にする。文字は各パネルの大きさに連動させる。 */
+
+.app {
+  display: grid;
+  gap: 12px;
+  min-height: 100dvh;
+  padding: 12px;
+}
+
+.pane {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.calendar {
+  min-height: 48vmax;
+}
+
+.clock {
+  height: 50vmin;
+}
+
+@media (min-width: 600px) and (min-height: 600px) {
+  .app {
+    height: 100dvh;
+    grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+
+  .pane {
+    container-type: size;
+  }
+
+  .calendar {
+    min-height: 0;
+  }
+
+  .clock {
+    height: auto;
+  }
+
+  .side-pane {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'info clock'
+      'memos memos'
+      'toolbar toolbar';
+    column-gap: 16px;
+  }
+}
+
+@media (min-width: 600px) and (min-height: 600px) and (orientation: landscape) {
+  .app {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .side-pane {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'info'
+      'clock'
+      'memos'
+      'toolbar';
+  }
+}
+
+/* ---- カレンダー ---- */
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.month-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+#month-title {
+  font-size: min(7cqw, 8cqh);
+  line-height: 1.2;
+}
+
+.nav-button {
+  flex: none;
+  width: 2em;
+  height: 2em;
+  font-size: min(5cqw, 5.5cqh);
+  line-height: 1;
+}
+
+.calendar {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-rows: auto repeat(var(--weeks, 5), minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 8px;
+}
+
+.weekday {
+  padding: 0.3em 0;
+  border-bottom: 2px solid var(--line);
+  color: var(--muted);
+  font-size: min(3.2cqw, 3.6cqh);
+  text-align: center;
+}
+
+.weekday.sun {
+  color: var(--sun);
+}
+
+.weekday.sat {
+  color: var(--sat);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border-radius: 14px;
+  font-size: min(6cqw, 7cqh);
+  line-height: 1;
+}
+
+.day.outside {
+  color: var(--muted);
+  opacity: 0.35;
+}
+
+/* 今日の日付の目立たせ方（設定で選ぶ）。設定ダイアログの見本にも同じクラスを使う。
+   塗りつぶし以外は文字色を変えないので、日曜・祝日の赤や土曜の青がそのまま残る。 */
+
+.today-fill {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.today-outline {
+  box-shadow: inset 0 0 0 0.09em var(--accent);
+}
+
+.today-tint {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.today-underline .num {
+  padding: 0 0.12em;
+  box-shadow: 0 0.14em 0 var(--accent);
+}
+
+/* 祝日名が下線にくっつかないよう少し離す */
+.today-underline .holiday-name {
+  margin-top: 0.8em;
+}
+
+/* 円は2桁の数字が収まる大きさにし、数字の位置がずれないよう重ねて描く */
+.today-circle .num {
+  position: relative;
+}
+
+.today-circle .num::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1.75em;
+  height: 1.75em;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.08em var(--accent);
+  transform: translate(-50%, -50%);
+}
+
+/* 祝日名が円と重ならないよう、円の外まで下げる */
+.today-circle .holiday-name {
+  margin-top: 1.35em;
+}
+
+.holiday-name {
+  max-width: 100%;
+  margin-top: 0.3em;
+  overflow: hidden;
+  font-size: min(2cqw, 2.3cqh);
+  white-space: nowrap;
+}
+
+.era {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: min(2.8cqw, 3cqh);
+  text-align: center;
+}
+
+/* ---- 今日・明日の情報 ---- */
+
+.info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+}
+
+.info-lead {
+  color: var(--muted);
+  font-size: min(4.6cqw, 4.4cqh);
+}
+
+.info-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.2em;
+  line-height: 1.25;
+}
+
+.info-md {
+  font-size: min(13cqw, 11.5cqh);
+}
+
+.info-weekday {
+  font-size: min(8cqw, 7cqh);
+}
+
+.info-holiday {
+  color: var(--sun);
+  font-size: min(5.4cqw, 5cqh);
+}
+
+.garbage {
+  width: fit-content;
+  margin-top: 0.4em;
+  padding: 0.35em 0.8em;
+  border-radius: 0.6em;
+  background: var(--garbage-bg);
+  color: var(--garbage-text);
+  font-size: min(5.2cqw, 4.8cqh);
+  line-height: 1.3;
+}
+
+.garbage.none {
+  background: var(--control);
+  color: var(--muted);
+}
+
+.info-tomorrow {
+  margin-top: min(3.5cqw, 3cqh);
+  padding-top: min(3.5cqw, 3cqh);
+  border-top: 2px solid var(--line);
+}
+
+.info-tomorrow .info-weekday {
+  font-size: min(6cqw, 5.4cqh);
+}
+
+.info-tomorrow .garbage {
+  font-size: min(4.6cqw, 4.2cqh);
+}
+
+/* ---- 時計 ---- */
+
+.clock {
+  grid-area: clock;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: min(2cqw, 2cqh);
+  min-height: 0;
+  padding-top: min(5cqw, 3cqh);
+}
+
+.digital {
+  color: var(--accent);
+  font-size: min(8.4cqw, 7cqh);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.analog {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.analog .face {
+  fill: var(--bg);
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.analog .tick {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+
+.analog .tick.major {
+  stroke: var(--text);
+  stroke-width: 2.5;
+}
+
+.analog .numeral {
+  fill: var(--text);
+  font-size: 19px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  /* 針と重なったときのために、文字盤と同じ色で縁取る */
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+
+.analog .hand {
+  stroke-linecap: round;
+}
+
+.analog .hand.hour {
+  stroke: var(--text);
+  stroke-width: 8;
+}
+
+.analog .hand.minute {
+  stroke: var(--accent);
+  stroke-width: 5;
+}
+
+.analog .pin {
+  fill: var(--text);
+}
+
+/* ---- メモ ---- */
+
+.memos {
+  grid-area: memos;
+  max-height: 30cqh;
+  margin-top: 12px;
+  padding: 0.6em 0.9em;
+  overflow-y: auto;
+  border-left: 6px solid var(--accent);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: min(4.4cqw, 3.8cqh);
+  line-height: 1.5;
+}
+
+.memo {
+  overflow-wrap: anywhere;
+}
+
+.memo a {
+  color: var(--sat);
+}
+
+.toolbar {
+  grid-area: toolbar;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ---- 設定ダイアログ ---- */
+
+.settings {
+  width: min(720px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.settings[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.settings-header,
+.settings-footer {
+  flex: none;
+  padding: 12px 20px;
+}
+
+.settings-header {
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-header h2 {
+  font-size: 1.25rem;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-body {
+  padding: 0 20px 20px;
+  overflow-y: auto;
+  outline: none;
+}
+
+.settings-section {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-section:last-child {
+  border-bottom: 0;
+}
+
+.settings-section h3 {
+  margin-bottom: 8px;
+  font-size: 1.15rem;
+}
+
+.settings-group {
+  margin-top: 16px;
+}
+
+.settings-group h4 {
+  font-size: 1rem;
+}
+
+.hint,
+.notice {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.notice:empty {
+  display: none;
+}
+
+.notice {
+  margin-top: 8px;
+  color: var(--text);
+}
+
+.settings input[type='text'],
+.settings input[type='date'],
+.settings input[type='number'],
+.settings select,
+.settings textarea {
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.settings input[type='text'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings input[type='number'] {
+  width: 5em;
+}
+
+.settings input[type='checkbox'],
+.settings input[type='radio'] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+
+.today-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.today-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 7em;
+  padding: 10px 10px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.today-choice:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.today-sample {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4em;
+  height: 2.2em;
+  border-radius: 10px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.field > span {
+  flex: none;
+}
+
+.field > input[type='number'] + span {
+  flex: 1;
+}
+
+.weekday-fields .field > span {
+  width: 6em;
+}
+
+.list-row .field > span {
+  width: 7em;
+}
+
+.list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.list-row-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.list-row-fields .field {
+  margin-top: 0;
+}
+
+.list-editor > .button {
+  margin-top: 10px;
+}
+
+.url-output {
+  width: 100%;
+  margin-top: 8px;
+  word-break: break-all;
+}
+
+.url-output + .button {
+  margin-top: 8px;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 16px;
+  align-items: center;
+  margin: 0;
+}
+
+.status dt {
+  font-weight: 700;
+}
+
+.status dd {
+  margin: 0;
+}
