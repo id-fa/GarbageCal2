@@ -4,6 +4,10 @@
 
 電源を繋いだ8～10インチ程度のAndroidタブレットを、ディスプレイの自動消灯機能をオフにしてブラウザを常時表示させておく想定です。
 
+|カレンダー表示|設定画面1|設定画面2|資源ごみの日表示|
+|---|---|---|---|
+|![メイン画面](docs/screenshot1.webp)|![設定画面1](docs/screenshot_setting1.webp)|![設定画面2](docs/screenshot_setting2.webp)|画像準備中|
+
 ## 設置
 
 中身を **HTTPS** で配信できる場所にそのまま置きます（オフライン動作に使う Service Worker が HTTPS 必須のため）。
