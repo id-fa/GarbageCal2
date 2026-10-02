@@ -2,7 +2,7 @@
 // アプリのファイルを更新したら CACHE の番号を上げる（オンラインなら network-first で
 // 常に新しいファイルを取りに行くので、上げ忘れても次回オンライン時に最新になる）。
 
-const CACHE = 'sgcalendar-v1';
+const CACHE = 'sgcalendar-v2';
 const FONT_CACHE = 'sgcalendar-fonts';
 const NETWORK_TIMEOUT_MS = 4000;
 
@@ -19,6 +19,7 @@ const ASSETS = [
   './js/dom.js',
   './js/garbage.js',
   './js/holidays.js',
+  './js/photo.js',
   './js/settings.js',
   './js/settings-ui.js',
   './js/storage.js',

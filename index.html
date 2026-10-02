@@ -17,17 +17,20 @@
 </head>
 <body>
 <main class="app">
-  <section class="pane calendar-pane">
-    <header class="month-nav">
-      <button type="button" id="prev-month" class="nav-button" aria-label="前の月">‹</button>
-      <div class="month-heading">
-        <h1 id="month-title"></h1>
-        <button type="button" id="back-to-today" class="button" hidden>今月に戻す</button>
-      </div>
-      <button type="button" id="next-month" class="nav-button" aria-label="次の月">›</button>
-    </header>
-    <div id="calendar" class="calendar"></div>
-    <p id="era" class="era"></p>
+  <section id="calendar-pane" class="pane calendar-pane">
+    <img id="photo" class="photo" alt="" hidden>
+    <div class="calendar-box">
+      <header class="month-nav">
+        <button type="button" id="prev-month" class="nav-button" aria-label="前の月">‹</button>
+        <div class="month-heading">
+          <h1 id="month-title"></h1>
+          <button type="button" id="back-to-today" class="button" hidden>今月に戻す</button>
+        </div>
+        <button type="button" id="next-month" class="nav-button" aria-label="次の月">›</button>
+      </header>
+      <div id="calendar" class="calendar"></div>
+      <p id="era" class="era"></p>
+    </div>
   </section>
 
   <section class="pane side-pane">

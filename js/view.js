@@ -24,6 +24,18 @@ export function applyTheme(theme) {
   }
 }
 
+// ---- 写真 ----
+
+// url があればパネルいっぱいに写真を敷き、カレンダーを小さくして隅に重ねる（見た目は style.css の .has-photo）。
+// null なら通常の表示。
+export function renderPhoto(pane, img, url, calendarPosition) {
+  pane.classList.toggle('has-photo', url !== null);
+  pane.dataset.calendarPosition = calendarPosition;
+  img.hidden = url === null;
+  if (url === null) img.removeAttribute('src');
+  else if (img.src !== url) img.src = url;
+}
+
 // ---- カレンダー ----
 
 export function renderCalendar(el, month, today, todayStyle) {

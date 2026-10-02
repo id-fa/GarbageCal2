@@ -1,4 +1,5 @@
 // 設定。保存先はこのブラウザの localStorage だけで、サーバーにもコードにも持たない。
+// （写真だけは大きいので設定に含めず、photo.js が別に保存する）
 // 他の端末へは JSON ファイルか「設定付きURL」（URLのハッシュに設定を埋め込んだもの）で渡す。
 
 import { isDateKey } from './dates.js';
@@ -18,6 +19,9 @@ export const TODAY_STYLES = ['fill', 'outline', 'underline', 'circle', 'tint'];
 // 配色テーマ。style.css の [data-theme='<名前>'] と対応する。auto は端末のライト／ダークに合わせる
 export const THEMES = ['auto', 'light', 'dark', 'sepia', 'sepia-dark'];
 
+// 写真に重ねる小さいカレンダーを置く隅（左下・右下）。style.css の [data-calendar-position='<名前>'] と対応する
+export const PHOTO_CALENDAR_POSITIONS = ['left', 'right'];
+
 export function defaultSettings() {
   return {
     version: 1,
@@ -35,6 +39,11 @@ export function defaultSettings() {
     },
     // { text, until }  until の日まで表示（空なら常に表示）
     memos: [],
+    // カレンダーを小さくして写真を表示する。写真そのものは設定に含めず、photo.js が IndexedDB に持つ
+    photo: {
+      enabled: false,
+      calendarPosition: 'right',
+    },
     display: {
       theme: 'auto',
       // 「第n○曜日」と表示する曜日（0=日 … 6=土）
@@ -67,6 +76,7 @@ export function normalizeSettings(raw) {
   const defaults = defaultSettings();
   const garbage = raw?.garbage ?? {};
   const display = raw?.display ?? {};
+  const photo = raw?.photo ?? {};
 
   return {
     version: 1,
@@ -105,6 +115,12 @@ export function normalizeSettings(raw) {
         until: isDateKey(memo?.until) ? memo.until : '',
       }))
       .filter((memo) => memo.text),
+    photo: {
+      enabled: bool(photo.enabled, defaults.photo.enabled),
+      calendarPosition: PHOTO_CALENDAR_POSITIONS.includes(photo.calendarPosition)
+        ? photo.calendarPosition
+        : defaults.photo.calendarPosition,
+    },
     display: {
       theme: THEMES.includes(display.theme) ? display.theme : defaults.display.theme,
       nthWeekdays: Array.isArray(display.nthWeekdays)

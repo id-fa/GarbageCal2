@@ -3,6 +3,7 @@
 import { now, syncClock } from './clock.js';
 import { addMonths, jstParts } from './dates.js';
 import { loadBundledHolidays, refreshHolidays } from './holidays.js';
+import { loadPhoto, storePhoto } from './photo.js';
 import {
   acceptUrlSettings,
   loadSettings,
@@ -19,6 +20,7 @@ import {
   renderCalendar,
   renderInfo,
   renderMemos,
+  renderPhoto,
 } from './view.js';
 
 const MINUTE_MS = 60 * 1000;
@@ -28,6 +30,8 @@ const VIEW_RESET_MS = 60 * MINUTE_MS;
 
 const $ = (id) => document.getElementById(id);
 const els = {
+  calendarPane: $('calendar-pane'),
+  photo: $('photo'),
   monthTitle: $('month-title'),
   backToToday: $('back-to-today'),
   calendar: $('calendar'),
@@ -41,16 +45,26 @@ const setAnalogClock = createAnalogClock($('analog'));
 const urlSettingsDialog = setupUrlSettingsDialog($('url-settings-dialog'));
 
 let settings = loadSettings();
+// 保存してある写真 { blob, url }。無ければ null
+let photo = null;
 // 表示中の月 { y, m }。null なら今月に追従する
 let viewMonth = null;
 let tickTimer = null;
 let viewResetTimer = null;
+
+function setPhoto(blob) {
+  if (photo) URL.revokeObjectURL(photo.url);
+  photo = blob ? { blob, url: URL.createObjectURL(blob) } : null;
+}
 
 function render() {
   const { hour, minute, ...today } = jstParts(now());
   const month = viewMonth ?? { y: today.y, m: today.m };
 
   applyTheme(settings.display.theme);
+  // 表示する設定でも、写真が無ければ（未選択・他の端末から設定だけ移した等）通常のカレンダーにする
+  const photoUrl = settings.photo.enabled && photo ? photo.url : null;
+  renderPhoto(els.calendarPane, els.photo, photoUrl, settings.photo.calendarPosition);
   els.monthTitle.textContent = `${month.y}年 ${month.m}月`;
   els.backToToday.hidden = viewMonth === null;
   renderCalendar(els.calendar, month, today, settings.display.todayStyle);
@@ -138,9 +152,14 @@ function init() {
   const settingsDialog = setupSettingsDialog({
     dialog: $('settings-dialog'),
     getSettings: () => settings,
-    onSave: (next) => {
+    getPhoto: () => photo?.blob ?? null,
+    onSave: (next, nextPhoto) => {
       settings = next;
       saveSettings(settings);
+      if (nextPhoto !== (photo?.blob ?? null)) {
+        setPhoto(nextPhoto);
+        storePhoto(nextPhoto).then((ok) => ok || console.warn('写真を保存できませんでした'));
+      }
       render();
     },
     onSyncClock: syncClockAndRefresh,
@@ -153,8 +172,13 @@ function init() {
   $('open-settings').addEventListener('click', () => settingsDialog.open());
   setupFullscreen();
 
-  // まず手元の情報だけで表示し、サーバー時刻・祝日・URLの設定が届いたら描き直す
+  // まず手元の情報だけで表示し、写真・サーバー時刻・祝日・URLの設定が届いたら描き直す
   refresh();
+  loadPhoto().then((blob) => {
+    if (!blob) return;
+    setPhoto(blob);
+    render();
+  });
   applyUrlSettings();
   loadBundledHolidays().then((loaded) => loaded && render());
   backgroundCheck();

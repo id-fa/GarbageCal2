@@ -49,6 +49,7 @@ console.log(computeHolidays(2026));
 - 保存データ・インポート・設定付きURL のどこから来た値も、必ず `settings.js` の `normalizeSettings()` を通す。型・範囲・件数の検証はここ1か所。
 - 設定項目を追加するときに触る場所: `defaultSettings()` → `normalizeSettings()` → `settings-ui.js` の入力欄 → 値を使う側。`migration/*.json` も `normalizeSettings()` を通して書き直しておく。古い保存データに項目が無くても既定値で埋まるので、移行処理は不要。
 - 設定ダイアログは下書き（`draft`）を編集し、「保存」で初めて反映する。入力欄は `draft` を直接書き換えるヘルパー（`textField` など）で作る。
+- 写真だけは設定に含めない。端末内のファイルは場所を覚えても後から開けないので、選ばれた画像を縮小して中身ごと IndexedDB に保存する（`photo.js`）。設定側（`photo`）に持つのは表示のオン／オフとカレンダーの位置だけで、写真そのものはエクスポートや設定付きURLに乗らない。ダイアログでは設定と同じく下書き（`draftPhoto`）として持ち、「保存」で初めて書き込む。
 - 設定付きURL（`#cfg=…`）は同じ内容を一度しか適用しない（`sgcal.appliedUrlConfig` に記録）。ホームURLに設定したまま端末側で編集しても巻き戻らないようにするため。
 - 設定付きURLは開いただけでは適用しない。`readUrlSettings()` で読み、確認ダイアログで「取り込む」が選ばれてから `acceptUrlSettings()` で保存する（リンクを踏ませるだけで設定やメモを差し替えられないようにするため）。`cfg` は `MAX_URL_PARAM_LENGTH` 文字までで、作る側・受け取る側の両方で弾く。超える設定は JSON のエクスポート／インポートで渡す。
 
@@ -61,6 +62,7 @@ console.log(computeHolidays(2026));
 - DOM は `dom.js` の `h()` / `svg()` で組み立てる。設定由来の文字列（メモ、ごみの文言）は URL 経由でも入ってくるので、`innerHTML` を使わない。メモのリンク化は `view.js` の `linkify()` だけが行う。
 - `view.js` は状態を持たず、渡された日付と設定から描くだけ。状態（設定・表示中の月・タイマー）は `main.js` にある。
 - 文字サイズは各パネルの大きさに連動させている（`.pane` がサイズコンテナで、`min(○cqw, ○cqh)` で指定）。縦向き・横向きの両方、および 6 週ある月で確認する。
+- 写真を表示するときは `.calendar-pane` に `.has-photo` が付き、カレンダーの箱（`.calendar-box`）が小さくなって下の隅に重なる。このとき箱がサイズコンテナになるので、中の `cqw` / `cqh` は箱の大きさが基準になる。写真あり・なしの両方で確認する。
 - 色は `style.css` 冒頭の CSS 変数（`--bg` `--text` など）だけで決め、個別の箇所に色を直接書かない。配色テーマは `<html>` の `data-theme` 属性で変数を差し替える（`view.js` の `applyTheme()`）。`settings.js` の `THEMES` と対応し、設定ダイアログの見本にも同じ属性を使う。テーマを足すときは `THEMES`・`style.css` の変数一式と `color-scheme`・`settings-ui.js` の `THEME_LABELS` を揃える。
 - カレンダー上の「今日」の見せ方は `.today-<スタイル名>` クラス。`settings.js` の `TODAY_STYLES` と対応し、設定ダイアログの見本にも同じクラスを使う。
 

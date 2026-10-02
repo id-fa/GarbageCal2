@@ -4,7 +4,9 @@ import { clockStatus } from './clock.js';
 import { WEEKDAYS, jstParts } from './dates.js';
 import { h } from './dom.js';
 import { holidayStatus } from './holidays.js';
+import { preparePhoto } from './photo.js';
 import {
+  PHOTO_CALENDAR_POSITIONS,
   THEMES,
   TODAY_STYLES,
   buildSettingsUrl,
@@ -28,6 +30,10 @@ const THEME_LABELS = {
   dark: 'ダーク',
   sepia: 'セピア',
   'sepia-dark': 'セピア（暗め）',
+};
+const PHOTO_CALENDAR_POSITION_LABELS = {
+  left: '左下',
+  right: '右下',
 };
 
 function formatTime(epochMs) {
@@ -229,6 +235,29 @@ function themeField(display) {
   );
 }
 
+// 選択肢から1つをラジオボタンで選ぶ
+function radioField(target, key, values, labels) {
+  return h(
+    'div',
+    { class: 'inline' },
+    values.map((value) =>
+      h(
+        'label',
+        { class: 'check' },
+        h('input', {
+          type: 'radio',
+          name: key,
+          checked: target[key] === value,
+          onchange: () => {
+            target[key] = value;
+          },
+        }),
+        labels[value],
+      ),
+    ),
+  );
+}
+
 function labeled(label, field) {
   return h('label', { class: 'field' }, h('span', null, label), field);
 }
@@ -313,9 +342,24 @@ export function setupUrlSettingsDialog(dialog) {
   };
 }
 
-export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, onRefreshHolidays }) {
+export function setupSettingsDialog({
+  dialog,
+  getSettings,
+  getPhoto,
+  onSave,
+  onSyncClock,
+  onRefreshHolidays,
+}) {
   const body = dialog.querySelector('.settings-body');
   let draft = null;
+  // 写真の下書き（Blob。無ければ null）。設定と同じく「保存」で初めて反映する
+  let draftPhoto = null;
+  let photoPreviewUrl = null;
+
+  function releasePhotoPreview() {
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    photoPreviewUrl = null;
+  }
 
   function garbageSection() {
     const { garbage } = draft;
@@ -392,6 +436,77 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
         ],
       }),
     );
+  }
+
+  function photoSection() {
+    const { photo } = draft;
+    const el = h('section', { class: 'settings-section' });
+    const redraw = (message = '') => {
+      releasePhotoPreview();
+      if (draftPhoto) photoPreviewUrl = URL.createObjectURL(draftPhoto);
+
+      const fileInput = h('input', {
+        type: 'file',
+        accept: 'image/*',
+        hidden: true,
+        onchange: async () => {
+          const [file] = fileInput.files;
+          if (!file) return;
+          try {
+            draftPhoto = await preparePhoto(file);
+            // 選んだのに表示されない、とならないよう表示もオンにする
+            photo.enabled = true;
+            redraw();
+          } catch {
+            redraw('この画像は読み込めませんでした。');
+          }
+        },
+      });
+
+      el.replaceChildren(
+        h('h3', null, '写真'),
+        h(
+          'p',
+          { class: 'hint' },
+          'カレンダーを小さくして下の隅に寄せ、空いたところに写真を表示します。写真はこのブラウザの中に保存され、エクスポートや設定付きURLには含まれません。',
+        ),
+        photoPreviewUrl
+          ? h('img', { class: 'photo-preview', src: photoPreviewUrl, alt: '選ばれている写真' })
+          : h('p', null, '写真は選ばれていません。'),
+        h(
+          'div',
+          { class: 'inline' },
+          h(
+            'button',
+            { type: 'button', class: 'button', onclick: () => fileInput.click() },
+            draftPhoto ? '写真を選び直す' : '写真を選ぶ',
+          ),
+          draftPhoto &&
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'button subtle',
+                onclick: () => {
+                  draftPhoto = null;
+                  redraw();
+                },
+              },
+              '写真を削除',
+            ),
+          fileInput,
+        ),
+        h('p', { class: 'notice', role: 'status' }, message),
+        checkField(photo, 'enabled', '写真を表示する'),
+        group(
+          'カレンダーの位置',
+          null,
+          radioField(photo, 'calendarPosition', PHOTO_CALENDAR_POSITIONS, PHOTO_CALENDAR_POSITION_LABELS),
+        ),
+      );
+    };
+    redraw();
+    return el;
   }
 
   function displaySection() {
@@ -605,6 +720,7 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
     body.replaceChildren(
       garbageSection(),
       memoSection(),
+      photoSection(),
       displaySection(),
       transferSection(message),
       statusSection(),
@@ -613,13 +729,15 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
 
   dialog.querySelector('[data-action="cancel"]').addEventListener('click', () => dialog.close());
   dialog.querySelector('[data-action="save"]').addEventListener('click', () => {
-    onSave(normalizeSettings(draft));
+    onSave(normalizeSettings(draft), draftPhoto);
     dialog.close();
   });
+  dialog.addEventListener('close', releasePhotoPreview);
 
   return {
     open() {
       draft = structuredClone(getSettings());
+      draftPhoto = getPhoto();
       render();
       dialog.showModal();
       body.scrollTop = 0;
