@@ -12,6 +12,7 @@ import {
 } from './settings.js';
 import { setupSettingsDialog, setupUrlSettingsDialog } from './settings-ui.js';
 import {
+  applyTheme,
   createAnalogClock,
   digitalText,
   eraText,
@@ -49,6 +50,7 @@ function render() {
   const { hour, minute, ...today } = jstParts(now());
   const month = viewMonth ?? { y: today.y, m: today.m };
 
+  applyTheme(settings.display.theme);
   els.monthTitle.textContent = `${month.y}年 ${month.m}月`;
   els.backToToday.hidden = viewMonth === null;
   renderCalendar(els.calendar, month, today, settings.display.todayStyle);

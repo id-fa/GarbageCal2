@@ -5,6 +5,7 @@ import { WEEKDAYS, jstParts } from './dates.js';
 import { h } from './dom.js';
 import { holidayStatus } from './holidays.js';
 import {
+  THEMES,
   TODAY_STYLES,
   buildSettingsUrl,
   defaultSettings,
@@ -20,6 +21,13 @@ const TODAY_STYLE_LABELS = {
   underline: '下線',
   circle: '丸で囲む',
   tint: '薄い背景',
+};
+const THEME_LABELS = {
+  auto: '端末に合わせる',
+  light: 'ライト',
+  dark: 'ダーク',
+  sepia: 'セピア',
+  'sepia-dark': 'セピア（暗め）',
 };
 
 function formatTime(epochMs) {
@@ -181,6 +189,40 @@ function todayStyleField(display) {
             },
           }),
           TODAY_STYLE_LABELS[style],
+        ),
+      ),
+    ),
+  );
+}
+
+// 配色テーマを、そのテーマの色で描いた見本つきの選択肢から選ぶ
+function themeField(display) {
+  return h(
+    'div',
+    { class: 'today-choices' },
+    THEMES.map((theme) =>
+      h(
+        'label',
+        { class: 'today-choice' },
+        h(
+          'span',
+          { class: 'theme-sample', 'data-theme': theme, 'aria-hidden': 'true' },
+          '月',
+          h('span', { class: 'sat' }, '土'),
+          h('span', { class: 'sun' }, '日'),
+        ),
+        h(
+          'span',
+          { class: 'check' },
+          h('input', {
+            type: 'radio',
+            name: 'theme',
+            checked: display.theme === theme,
+            onchange: () => {
+              display.theme = theme;
+            },
+          }),
+          THEME_LABELS[theme],
         ),
       ),
     ),
@@ -356,6 +398,7 @@ export function setupSettingsDialog({ dialog, getSettings, onSave, onSyncClock, 
     const { display } = draft;
     return section(
       '表示',
+      group('配色', null, themeField(display)),
       group(
         '「第n○曜日」と表示する曜日',
         null,

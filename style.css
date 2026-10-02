@@ -1,5 +1,15 @@
+/* ---- 配色テーマ（設定で選ぶ）----
+   <html> の data-theme で切り替える。settings.js の THEMES と対応する。
+   設定ダイアログの見本にも同じ属性を付けるので、:root に限定しない。
+   auto（スクリプトが動く前の属性なしも同じ）は端末のライト／ダークに合わせる。 */
+
 :root {
   color-scheme: light dark;
+}
+
+:root,
+[data-theme='auto'],
+[data-theme='light'] {
   --bg: #f4f1ea;
   --surface: #fffdf9;
   --line: #e4ded1;
@@ -15,7 +25,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]),
+  [data-theme='auto'] {
     --bg: #121417;
     --surface: #1c1f24;
     --line: #32363d;
@@ -28,6 +39,64 @@
     --garbage-text: #ffe9a8;
     --control: #2b2f36;
   }
+}
+
+/* 上の @media の中と同じ値 */
+[data-theme='dark'] {
+  --bg: #121417;
+  --surface: #1c1f24;
+  --line: #32363d;
+  --text: #f1eee7;
+  --muted: #a09b90;
+  --sun: #ff8585;
+  --sat: #86b6ff;
+  --accent: #d9536b;
+  --garbage-bg: #5c4700;
+  --garbage-text: #ffe9a8;
+  --control: #2b2f36;
+}
+
+/* 生成りの紙にこげ茶の文字。白と黒の強い対比や青みを抑えている */
+[data-theme='sepia'] {
+  --bg: #e7dabd;
+  --surface: #f5ecd6;
+  --line: #d8c9a6;
+  --text: #43301c;
+  --muted: #7d684b;
+  --sun: #b3392b;
+  --sat: #2c5c99;
+  --accent: #a5522e;
+  --on-accent: #fff8e8;
+  --garbage-bg: #efcb72;
+  --garbage-text: #4a3500;
+  --control: #e4d6b6;
+}
+
+/* セピアの暗い版。こげ茶の地に生成りの文字 */
+[data-theme='sepia-dark'] {
+  --bg: #1d1711;
+  --surface: #2a2119;
+  --line: #47392b;
+  --text: #eadbbd;
+  --muted: #a8957a;
+  --sun: #f08f78;
+  --sat: #93b8de;
+  --accent: #dc9152;
+  --on-accent: #24170b;
+  --garbage-bg: #5a4410;
+  --garbage-text: #f6dfa0;
+  --control: #3a2e23;
+}
+
+/* 入力欄やスクロールバーなど、ブラウザが描く部分の明暗もテーマに合わせる */
+:root[data-theme='light'],
+:root[data-theme='sepia'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'],
+:root[data-theme='sepia-dark'] {
+  color-scheme: dark;
 }
 
 * {
@@ -647,6 +716,24 @@ p {
   height: 2.2em;
   border-radius: 10px;
   font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 見本自身に data-theme を付けて、そのテーマの色で描く */
+.theme-sample {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25em;
+  width: 100%;
+  height: 2.2em;
+  padding: 0 0.5em;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.3rem;
   font-weight: 700;
   line-height: 1;
 }

@@ -15,6 +15,9 @@ const MAX_LIST_ITEMS = 50;
 // カレンダー上の「今日」の目立たせ方。style.css の .today-<名前> と対応する
 export const TODAY_STYLES = ['fill', 'outline', 'underline', 'circle', 'tint'];
 
+// 配色テーマ。style.css の [data-theme='<名前>'] と対応する。auto は端末のライト／ダークに合わせる
+export const THEMES = ['auto', 'light', 'dark', 'sepia', 'sepia-dark'];
+
 export function defaultSettings() {
   return {
     version: 1,
@@ -33,6 +36,7 @@ export function defaultSettings() {
     // { text, until }  until の日まで表示（空なら常に表示）
     memos: [],
     display: {
+      theme: 'auto',
       // 「第n○曜日」と表示する曜日（0=日 … 6=土）
       nthWeekdays: [6],
       showHeisei: true,
@@ -102,6 +106,7 @@ export function normalizeSettings(raw) {
       }))
       .filter((memo) => memo.text),
     display: {
+      theme: THEMES.includes(display.theme) ? display.theme : defaults.display.theme,
       nthWeekdays: Array.isArray(display.nthWeekdays)
         ? intSet(display.nthWeekdays, 0, 6)
         : defaults.display.nthWeekdays,

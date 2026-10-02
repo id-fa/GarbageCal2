@@ -11,6 +11,19 @@ function dayColorClass(date, holiday) {
   return weekday === 6 ? 'sat' : '';
 }
 
+// ---- 配色テーマ ----
+
+export function applyTheme(theme) {
+  const root = document.documentElement;
+  root.dataset.theme = theme;
+  // ブラウザのツールバーの色も背景に合わせる。auto のときは index.html に書いてある色（ライト用・ダーク用）に戻す
+  const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) {
+    meta.dataset.default ??= meta.content;
+    meta.content = theme === 'auto' ? meta.dataset.default : bg;
+  }
+}
+
 // ---- カレンダー ----
 
 export function renderCalendar(el, month, today, todayStyle) {

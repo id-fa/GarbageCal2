@@ -61,6 +61,7 @@ console.log(computeHolidays(2026));
 - DOM は `dom.js` の `h()` / `svg()` で組み立てる。設定由来の文字列（メモ、ごみの文言）は URL 経由でも入ってくるので、`innerHTML` を使わない。メモのリンク化は `view.js` の `linkify()` だけが行う。
 - `view.js` は状態を持たず、渡された日付と設定から描くだけ。状態（設定・表示中の月・タイマー）は `main.js` にある。
 - 文字サイズは各パネルの大きさに連動させている（`.pane` がサイズコンテナで、`min(○cqw, ○cqh)` で指定）。縦向き・横向きの両方、および 6 週ある月で確認する。
+- 色は `style.css` 冒頭の CSS 変数（`--bg` `--text` など）だけで決め、個別の箇所に色を直接書かない。配色テーマは `<html>` の `data-theme` 属性で変数を差し替える（`view.js` の `applyTheme()`）。`settings.js` の `THEMES` と対応し、設定ダイアログの見本にも同じ属性を使う。テーマを足すときは `THEMES`・`style.css` の変数一式と `color-scheme`・`settings-ui.js` の `THEME_LABELS` を揃える。
 - カレンダー上の「今日」の見せ方は `.today-<スタイル名>` クラス。`settings.js` の `TODAY_STYLES` と対応し、設定ダイアログの見本にも同じクラスを使う。
 
 ### Service Worker
