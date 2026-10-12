@@ -377,6 +377,7 @@ export function setupSettingsDialog({
           ),
           labeled('空欄の曜日', textField(garbage, 'noneText')),
         ),
+        checkField(garbage, 'weeklyLarge', '曜日ごとの文言を大きい文字で表示する'),
         checkField(garbage, 'noneTextLarge', '空欄の曜日の文言を大きい文字で表示する'),
       ),
       group(

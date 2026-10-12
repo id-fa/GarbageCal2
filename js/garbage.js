@@ -47,6 +47,7 @@ export function garbageInfo(garbage, date) {
   return {
     text: [weekly, ...matched, ...unmatched].filter(Boolean).join('・'),
     collected: true,
-    large: false,
+    // 曜日ごとの文言を含む日だけ大きくする（第n曜日のルールだけの日は通常の大きさ）
+    large: garbage.weeklyLarge && Boolean(weekly),
   };
 }
