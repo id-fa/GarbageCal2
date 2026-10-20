@@ -19,7 +19,8 @@ export function findClosure(garbage, date) {
   );
 }
 
-// その日のごみ情報 { text: 表示文言, collected: 収集がある日か, large: 大きい文字で表示するか }。
+// その日のごみ情報 { text: 表示文言, collected: 収集がある日か, large: 大きい文字で表示するか,
+//   extraLarge: 大きい文字をさらに大きくするか（large のときだけ true になる） }。
 // ごみ情報を使わない設定なら null。
 export function garbageInfo(garbage, date) {
   if (!garbage.enabled) return null;
@@ -27,7 +28,7 @@ export function garbageInfo(garbage, date) {
   const closure = findClosure(garbage, date);
   if (closure) {
     const text = closure.label ? `ごみ収集はお休み（${closure.label}）` : 'ごみ収集はお休み';
-    return { text, collected: false, large: false };
+    return { text, collected: false, large: false, extraLarge: false };
   }
 
   const weekday = weekdayOf(date);
@@ -37,7 +38,12 @@ export function garbageInfo(garbage, date) {
   const matched = rules.filter((rule) => rule.weeks.includes(nth)).map((rule) => rule.text);
 
   if (!weekly && matched.length === 0) {
-    return { text: garbage.noneText, collected: false, large: garbage.noneTextLarge };
+    return {
+      text: garbage.noneText,
+      collected: false,
+      large: garbage.noneTextLarge,
+      extraLarge: garbage.noneTextLarge && garbage.extraLarge,
+    };
   }
 
   // 該当しない週の文言（「古紙回収なし」など）は、他に出せるごみがある日にだけ添える
@@ -49,5 +55,6 @@ export function garbageInfo(garbage, date) {
     collected: true,
     // 曜日ごとの文言を含む日だけ大きくする（第n曜日のルールだけの日は通常の大きさ）
     large: garbage.weeklyLarge && Boolean(weekly),
+    extraLarge: garbage.weeklyLarge && garbage.extraLarge && Boolean(weekly),
   };
 }

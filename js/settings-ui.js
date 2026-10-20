@@ -379,6 +379,7 @@ export function setupSettingsDialog({
         ),
         checkField(garbage, 'weeklyLarge', '曜日ごとの文言を大きい文字で表示する'),
         checkField(garbage, 'noneTextLarge', '空欄の曜日の文言を大きい文字で表示する'),
+        checkField(garbage, 'extraLarge', '大きい文字をさらに大きくする'),
       ),
       group(
         '第n曜日だけの収集（資源ごみなど）',

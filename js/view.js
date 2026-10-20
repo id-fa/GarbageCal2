@@ -81,7 +81,12 @@ export function eraText(year, display) {
 
 function garbageBadge(info) {
   if (!info) return null;
-  const classes = ['garbage', !info.collected && 'none', info.large && 'large'];
+  const classes = [
+    'garbage',
+    !info.collected && 'none',
+    info.large && 'large',
+    info.extraLarge && 'extra-large',
+  ];
   return h('p', { class: classes.filter(Boolean).join(' ') }, info.text);
 }
 

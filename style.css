@@ -559,6 +559,11 @@ p {
   font-size: min(6.8cqw, 6.2cqh);
 }
 
+/* さらに大きくする設定（extraLarge）のとき */
+.garbage.large.extra-large {
+  font-size: min(8.6cqw, 7.8cqh);
+}
+
 .info-tomorrow {
   margin-top: min(3.5cqw, 3cqh);
   padding-top: min(3.5cqw, 3cqh);
@@ -575,6 +580,10 @@ p {
 
 .info-tomorrow .garbage.large {
   font-size: min(6cqw, 5.4cqh);
+}
+
+.info-tomorrow .garbage.large.extra-large {
+  font-size: min(7.4cqw, 6.6cqh);
 }
 
 /* ---- 時計 ---- */

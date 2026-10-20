@@ -34,6 +34,8 @@ export function defaultSettings() {
       noneText: 'ゴミは出せません',
       // noneText を大きい文字で表示する
       noneTextLarge: false,
+      // 大きい文字（weeklyLarge / noneTextLarge）をさらに大きくする
+      extraLarge: false,
       // 第n○曜日のルール: { weekday, weeks: [1..5], text, offText }
       rules: [],
       // 収集休み期間: { from, to, yearly, label }
@@ -88,6 +90,7 @@ export function normalizeSettings(raw) {
       weeklyLarge: bool(garbage.weeklyLarge, defaults.garbage.weeklyLarge),
       noneText: text(garbage.noneText, 40) || defaults.garbage.noneText,
       noneTextLarge: bool(garbage.noneTextLarge, defaults.garbage.noneTextLarge),
+      extraLarge: bool(garbage.extraLarge, defaults.garbage.extraLarge),
       rules: list(garbage.rules)
         .map((rule) => ({
           weekday: int(rule?.weekday, 0, 6, 0),
