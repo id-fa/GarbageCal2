@@ -4,11 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 概要
 
-タブレットに常時表示しておくカレンダー付き時計（高齢の家族向け）。`app/` が本体で、ビルド・依存パッケージ・サーバー側処理のない静的ファイル（素の ES Modules）。HTTPS で配信する前提（Service Worker のため）。
+タブレットに常時表示しておくカレンダー付き時計（高齢の家族向け）。リポジトリ直下（`index.html` `style.css` `sw.js` `js/`）が本体で、ビルド・依存パッケージ・サーバー側処理のない静的ファイル（素の ES Modules）。HTTPS で配信する前提（Service Worker のため）。
 
-- `app/` … アプリ本体。ここだけを配信する
-- `migration/` … 旧版の設定を再現したインポート用 JSON
+- 直下 … アプリ本体（GitHub Pages でそのまま配信される）
+- `migration/` … 旧版の設定を再現したインポート用 JSON（ローカルの `.git/info/exclude` で除外）
 - `original/` … 旧版（PHP）。参照用なので変更しない
+- `docs/` … README 用のスクリーンショット
 
 設置方法や利用者向けの説明は `README.md` にある。
 
@@ -18,17 +19,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # ローカルで動かす（localhost は Service Worker が有効。Date ヘッダーも返るので時刻同期も試せる）
-cd app && python -m http.server 8765
+python -m http.server 8765
 
 # 構文チェック
-for f in app/js/*.js app/sw.js; do node --check "$f"; done
+for f in js/*.js sw.js; do node --check "$f"; done
 ```
 
-ロジック系モジュール（`dates.js` `holidays.js` `garbage.js` `settings.js`）は DOM に依存せず、`storage.js` が localStorage の無い環境を吸収するので、Node からそのまま `import` して確認できる。
+ロジック系モジュール（`dates.js` `holidays.js` `garbage.js` `settings.js` `notes.js`、`markdown.js` の `parseBlocks()` / `parseInline()` / `toggleTask()`）は DOM に依存せず、`storage.js` が localStorage の無い環境を吸収するので、Node からそのまま `import` して確認できる。
 
 ```bash
 node --input-type=module -e "
-const { computeHolidays } = await import('file:///D:/_CODE/sgCalendar/app/js/holidays.js');
+const { computeHolidays } = await import('file:///D:/_CODE/GarbageCal2/js/holidays.js');
 console.log(computeHolidays(2026));
 "
 ```
@@ -66,6 +67,14 @@ console.log(computeHolidays(2026));
 - 色は `style.css` 冒頭の CSS 変数（`--bg` `--text` など）だけで決め、個別の箇所に色を直接書かない。配色テーマは `<html>` の `data-theme` 属性で変数を差し替える（`view.js` の `applyTheme()`）。`settings.js` の `THEMES` と対応し、設定ダイアログの見本にも同じ属性を使う。テーマを足すときは `THEMES`・`style.css` の変数一式と `color-scheme`・`settings-ui.js` の `THEME_LABELS` を揃える。
 - カレンダー上の「今日」の見せ方は `.today-<スタイル名>` クラス。`settings.js` の `TODAY_STYLES` と対応し、設定ダイアログの見本にも同じクラスを使う。
 
+### ノート
+
+- 本文は `notes.js` が localStorage の `sgcal.notes` に持ち、設定（`sgcal.settings`）には含めない。エクスポート／インポートも別ファイル（ノート全体の JSON、1ページの Markdown）。外から来た値は `normalizeNotes()` を通す（ページ数・文字数の上限、必ず1ページ以上）。
+- 見た目（切り替える範囲 `area`・罫線 `rule`・配色 `theme`・書体 `font`・文字の大きさ `size`）だけが設定の `notes` にある。`settings.js` の `NOTE_*` 定数、`style.css` の `[data-note-*]`、`settings-ui.js` のラベルを揃える。ノートのパネル（`#note-pane`）にこれらの `data-note-*` 属性を付けて切り替え、設定ダイアログの見本（`.note-sample.paper`）も同じ属性で描く。
+- 表示中は `.app` に `data-notes="<area>"` が付き、置き換えられるパネルが消える。編集中は設定にかかわらず `full`（`main.js` の `applyNotesArea()`）。状態（開いているか・放置タイマー）は `main.js`、ページ・編集中かどうかは `notes-ui.js` が持つ。`render()`（毎分）はノートに触らない。
+- Markdown は `markdown.js`。1行＝1行（空行は空の行、改行はそのまま改行）で、一般的な Markdown のように段落をまとめない。描画は `renderMarkdown()`（`h()` で組み立て、`innerHTML` は使わない）。見たまま編集は contenteditable で、`domToMarkdown()` が DOM（ブラウザが作る `div` `b` `i` 等も含む）を本文に戻す。記号を文字として書いた箇所は `\` でエスケープして往復させる。閲覧中のチェックは `toggleTask()` で該当行だけ書き換える。
+- 編集中は入力のたびに（少し遅らせて）保存する。見たまま編集では DOM を描き直さず、ページ切り替え・モード切り替え・完了のときだけ `commit()` で本文に戻す。
+
 ### Service Worker
 
-`sw.js` は同一オリジンの GET を network-first（4 秒でキャッシュにフォールバック）で扱うので、オンラインなら常に最新ファイルが使われる。GET 以外（時刻同期の HEAD）には手を出さない。**`app/` にファイルを追加・削除したら `ASSETS` を更新し、`CACHE` の番号を上げる。**
+`sw.js` は同一オリジンの GET を network-first（4 秒でキャッシュにフォールバック）で扱うので、オンラインなら常に最新ファイルが使われる。GET 以外（時刻同期の HEAD）には手を出さない。**ファイルを追加・削除したら `ASSETS` を更新し、`CACHE` の番号を上げる。** `index.html` の `style.css` / `main.js` の `?v=` も合わせて更新する。

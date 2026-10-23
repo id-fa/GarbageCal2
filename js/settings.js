@@ -22,6 +22,18 @@ export const THEMES = ['auto', 'light', 'dark', 'sepia', 'sepia-dark'];
 // 写真に重ねる小さいカレンダーを置く隅（左下・右下）。style.css の [data-calendar-position='<名前>'] と対応する
 export const PHOTO_CALENDAR_POSITIONS = ['left', 'right'];
 
+// ---- ノート（見た目の設定だけ。本文は notes.js が別に保存する）----
+// ノートに切り替えたとき置き換える範囲。style.css の .app[data-notes='<名前>'] と対応する
+export const NOTE_AREAS = ['full', 'calendar', 'side'];
+// 罫線。style.css の [data-note-rule='<名前>'] と対応する
+export const NOTE_RULES = ['none', 'line', 'wave'];
+// ノート用紙の配色。style.css の [data-note-theme='<名前>'] と対応する
+export const NOTE_THEMES = ['light', 'dark', 'sepia'];
+// 書体。style.css の [data-note-font='<名前>'] と対応する（Google Fonts から読み込む）
+export const NOTE_FONTS = ['gothic', 'mincho', 'maru', 'hand'];
+// 文字の大きさ。style.css の [data-note-size='<名前>'] と対応する。ノート画面のボタンでもこの順に切り替える
+export const NOTE_SIZES = ['small', 'medium', 'large', 'xlarge'];
+
 export function defaultSettings() {
   return {
     version: 1,
@@ -47,6 +59,14 @@ export function defaultSettings() {
     photo: {
       enabled: false,
       calendarPosition: 'right',
+    },
+    // ノートの見た目。本文は設定に含めず、notes.js が localStorage の別のキーに持つ
+    notes: {
+      area: 'full',
+      rule: 'line',
+      theme: 'light',
+      font: 'gothic',
+      size: 'medium',
     },
     display: {
       theme: 'auto',
@@ -81,6 +101,8 @@ export function normalizeSettings(raw) {
   const garbage = raw?.garbage ?? {};
   const display = raw?.display ?? {};
   const photo = raw?.photo ?? {};
+  const notes = raw?.notes ?? {};
+  const oneOf = (choices, value, fallback) => (choices.includes(value) ? value : fallback);
 
   return {
     version: 1,
@@ -126,6 +148,13 @@ export function normalizeSettings(raw) {
       calendarPosition: PHOTO_CALENDAR_POSITIONS.includes(photo.calendarPosition)
         ? photo.calendarPosition
         : defaults.photo.calendarPosition,
+    },
+    notes: {
+      area: oneOf(NOTE_AREAS, notes.area, defaults.notes.area),
+      rule: oneOf(NOTE_RULES, notes.rule, defaults.notes.rule),
+      theme: oneOf(NOTE_THEMES, notes.theme, defaults.notes.theme),
+      font: oneOf(NOTE_FONTS, notes.font, defaults.notes.font),
+      size: oneOf(NOTE_SIZES, notes.size, defaults.notes.size),
     },
     display: {
       theme: THEMES.includes(display.theme) ? display.theme : defaults.display.theme,

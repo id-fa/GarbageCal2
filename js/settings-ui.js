@@ -2,10 +2,15 @@
 
 import { clockStatus } from './clock.js';
 import { WEEKDAYS, jstParts } from './dates.js';
-import { h } from './dom.js';
+import { downloadText, h } from './dom.js';
 import { holidayStatus } from './holidays.js';
 import { preparePhoto } from './photo.js';
 import {
+  NOTE_AREAS,
+  NOTE_FONTS,
+  NOTE_RULES,
+  NOTE_SIZES,
+  NOTE_THEMES,
   PHOTO_CALENDAR_POSITIONS,
   THEMES,
   TODAY_STYLES,
@@ -34,6 +39,33 @@ const THEME_LABELS = {
 const PHOTO_CALENDAR_POSITION_LABELS = {
   left: '左下',
   right: '右下',
+};
+const NOTE_AREA_LABELS = {
+  full: '画面全体',
+  calendar: 'カレンダーの部分だけ',
+  side: '時計の部分だけ',
+};
+const NOTE_RULE_LABELS = {
+  none: '罫線なし',
+  line: '直線',
+  wave: '波線',
+};
+const NOTE_THEME_LABELS = {
+  light: 'ライト',
+  dark: 'ダーク',
+  sepia: 'セピア',
+};
+const NOTE_FONT_LABELS = {
+  gothic: 'ゴシック',
+  mincho: '明朝',
+  maru: '丸ゴシック',
+  hand: '手書き風',
+};
+const NOTE_SIZE_LABELS = {
+  small: '小',
+  medium: '中',
+  large: '大',
+  xlarge: '特大',
 };
 
 function formatTime(epochMs) {
@@ -229,6 +261,34 @@ function themeField(display) {
             },
           }),
           THEME_LABELS[theme],
+        ),
+      ),
+    ),
+  );
+}
+
+// 見本つきの選択肢から1つを選ぶ。sample(value) が見本の要素を返す
+function sampledRadioField(target, key, values, labels, sample) {
+  return h(
+    'div',
+    { class: 'today-choices' },
+    values.map((value) =>
+      h(
+        'label',
+        { class: 'today-choice' },
+        sample(value),
+        h(
+          'span',
+          { class: 'check' },
+          h('input', {
+            type: 'radio',
+            name: `note-${key}`,
+            checked: target[key] === value,
+            onchange: () => {
+              target[key] = value;
+            },
+          }),
+          labels[value],
         ),
       ),
     ),
@@ -511,6 +571,48 @@ export function setupSettingsDialog({
     return el;
   }
 
+  function notesSection() {
+    const { notes } = draft;
+    // 見本はノート画面と同じ data-note-* 属性で描く
+    const paperSample = (attrs, text) =>
+      h('span', { class: 'note-sample paper', 'aria-hidden': 'true', ...attrs }, text);
+    return section(
+      'ノート',
+      h(
+        'p',
+        { class: 'hint' },
+        '画面右下の「ノート」で、カレンダーとノート（Markdown で書けるメモ帳）を切り替えます。ノートの本文はここには含まれず、ノート画面の「編集」からインポート／エクスポートします。',
+      ),
+      group('ノートに切り替える範囲', null, radioField(notes, 'area', NOTE_AREAS, NOTE_AREA_LABELS)),
+      group(
+        '罫線',
+        null,
+        sampledRadioField(notes, 'rule', NOTE_RULES, NOTE_RULE_LABELS, (rule) =>
+          paperSample({ 'data-note-theme': 'light', 'data-note-rule': rule, 'data-note-font': 'gothic' }, 'あいう'),
+        ),
+      ),
+      group(
+        '用紙の配色',
+        null,
+        sampledRadioField(notes, 'theme', NOTE_THEMES, NOTE_THEME_LABELS, (theme) =>
+          paperSample({ 'data-note-theme': theme, 'data-note-rule': 'line', 'data-note-font': 'gothic' }, 'あいう'),
+        ),
+      ),
+      group(
+        '書体',
+        null,
+        sampledRadioField(notes, 'font', NOTE_FONTS, NOTE_FONT_LABELS, (font) =>
+          paperSample({ 'data-note-theme': 'light', 'data-note-rule': 'none', 'data-note-font': font }, 'あい漢字'),
+        ),
+      ),
+      group(
+        '文字の大きさ',
+        'ノート画面の「文字」ボタンでも切り替えられます。',
+        radioField(notes, 'size', NOTE_SIZES, NOTE_SIZE_LABELS),
+      ),
+    );
+  }
+
   function displaySection() {
     const { display } = draft;
     return section(
@@ -614,12 +716,7 @@ export function setupSettingsDialog({
             type: 'button',
             class: 'button',
             onclick: () => {
-              const blob = new Blob([serializeSettings(normalizeSettings(draft))], {
-                type: 'application/json',
-              });
-              const url = URL.createObjectURL(blob);
-              h('a', { href: url, download: EXPORT_FILE_NAME }).click();
-              setTimeout(() => URL.revokeObjectURL(url), 1000);
+              downloadText(EXPORT_FILE_NAME, serializeSettings(normalizeSettings(draft)), 'application/json');
             },
           },
           'エクスポート',
@@ -723,6 +820,7 @@ export function setupSettingsDialog({
       garbageSection(),
       memoSection(),
       photoSection(),
+      notesSection(),
       displaySection(),
       transferSection(message),
       statusSection(),

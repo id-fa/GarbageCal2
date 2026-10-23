@@ -11,6 +11,7 @@ import {
   saveSettings,
   serializeSettings,
 } from './settings.js';
+import { setupNotePane } from './notes-ui.js';
 import { setupSettingsDialog, setupUrlSettingsDialog } from './settings-ui.js';
 import {
   applyTheme,
@@ -30,7 +31,10 @@ const VIEW_RESET_MS = 60 * MINUTE_MS;
 
 const $ = (id) => document.getElementById(id);
 const els = {
+  app: document.querySelector('.app'),
   calendarPane: $('calendar-pane'),
+  notePane: $('note-pane'),
+  openNotes: $('open-notes'),
   photo: $('photo'),
   monthTitle: $('month-title'),
   backToToday: $('back-to-today'),
@@ -51,6 +55,20 @@ let photo = null;
 let viewMonth = null;
 let tickTimer = null;
 let viewResetTimer = null;
+// ノートを表示中か。放置されたら（編集中でなければ）カレンダーに戻す
+let notesOpen = false;
+let noteResetTimer = null;
+
+const notePane = setupNotePane({
+  pane: els.notePane,
+  onSizeChange: (size) => {
+    settings.notes.size = size;
+    saveSettings(settings);
+    notePane.applyDesign(settings.notes);
+  },
+  onClose: () => setNotesOpen(false),
+  onEditingChange: (editing) => applyNotesArea(editing),
+});
 
 function setPhoto(blob) {
   if (photo) URL.revokeObjectURL(photo.url);
@@ -100,6 +118,43 @@ function shiftMonth(delta) {
   showMonth(addMonths(viewMonth ?? { y: today.y, m: today.m }, delta));
 }
 
+// ---- ノート ----
+
+function armNoteReset() {
+  clearTimeout(noteResetTimer);
+  if (!notesOpen) return;
+  noteResetTimer = setTimeout(() => {
+    if (notePane.isEditing()) armNoteReset();
+    else setNotesOpen(false);
+  }, VIEW_RESET_MS);
+}
+
+// ノートが置き換える範囲（全画面・カレンダー部・時計部）を .app の data-notes に反映する。
+// 編集中は書式ボタンや入力欄に場所が要るので、設定にかかわらず全画面にする
+function applyNotesArea(editing = notePane.isEditing()) {
+  if (!notesOpen) {
+    delete els.app.dataset.notes;
+    return;
+  }
+  els.app.dataset.notes = editing ? 'full' : settings.notes.area;
+}
+
+// ノートとカレンダーを切り替える
+function setNotesOpen(open) {
+  notesOpen = open;
+  if (open) notePane.show();
+  else notePane.hide();
+  applyNotesArea();
+  els.openNotes.textContent = open ? 'カレンダー' : 'ノート';
+  armNoteReset();
+}
+
+// 設定が変わったときに、ノートの見た目と置き換える範囲を反映する
+function applyNoteSettings() {
+  notePane.applyDesign(settings.notes);
+  applyNotesArea();
+}
+
 async function syncClockAndRefresh() {
   const ok = await syncClock();
   if (ok) refresh();
@@ -131,6 +186,7 @@ async function applyUrlSettings() {
   if (!unchanged && !(await urlSettingsDialog.confirm(pending.settings))) return;
   acceptUrlSettings(pending);
   settings = pending.settings;
+  applyNoteSettings();
   render();
 }
 
@@ -160,6 +216,7 @@ function init() {
         setPhoto(nextPhoto);
         storePhoto(nextPhoto).then((ok) => ok || console.warn('写真を保存できませんでした'));
       }
+      applyNoteSettings();
       render();
     },
     onSyncClock: syncClockAndRefresh,
@@ -170,6 +227,11 @@ function init() {
   $('next-month').addEventListener('click', () => shiftMonth(1));
   els.backToToday.addEventListener('click', () => showMonth(null));
   $('open-settings').addEventListener('click', () => settingsDialog.open());
+  els.openNotes.addEventListener('click', () => setNotesOpen(!notesOpen));
+  // ノートを触っている間は放置とみなさない
+  els.notePane.addEventListener('pointerdown', armNoteReset);
+  els.notePane.addEventListener('keydown', armNoteReset);
+  applyNoteSettings();
   setupFullscreen();
 
   // まず手元の情報だけで表示し、写真・サーバー時刻・祝日・URLの設定が届いたら描き直す

@@ -99,6 +99,77 @@
   color-scheme: dark;
 }
 
+/* ---- ノート用紙の配色・書体・文字の大きさ（設定で選ぶ）----
+   ノートのパネルに data-note-theme / data-note-font / data-note-size を付けて切り替える。
+   settings.js の NOTE_THEMES / NOTE_FONTS / NOTE_SIZES と対応し、設定ダイアログの見本にも同じ属性を使う。
+   アプリ本体の配色とは独立で、用紙（.paper）の中だけに効く。 */
+
+[data-note-theme='light'] {
+  --note-bg: #fffdf7;
+  --note-text: #2a2621;
+  --note-muted: #7b756a;
+  --note-rule: #c3d2e6;
+  --note-accent: #c8475d;
+  --note-link: #2a62c9;
+  --note-code-bg: #efe9db;
+  color-scheme: light;
+}
+
+[data-note-theme='dark'] {
+  --note-bg: #1b1d21;
+  --note-text: #ece8df;
+  --note-muted: #a09b90;
+  --note-rule: #3b4048;
+  --note-accent: #d9536b;
+  --note-link: #86b6ff;
+  --note-code-bg: #2b2f36;
+  color-scheme: dark;
+}
+
+[data-note-theme='sepia'] {
+  --note-bg: #f4ead3;
+  --note-text: #43301c;
+  --note-muted: #7d684b;
+  --note-rule: #d6c49d;
+  --note-accent: #a5522e;
+  --note-link: #2c5c99;
+  --note-code-bg: #e9dcbd;
+  color-scheme: light;
+}
+
+/* Google Fonts から読み込む（index.html の link）。無ければ端末の近い書体に落ちる */
+[data-note-font='gothic'] {
+  --note-font: 'BIZ UDPGothic', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', Meiryo, sans-serif;
+}
+
+[data-note-font='mincho'] {
+  --note-font: 'BIZ UDPMincho', 'Hiragino Mincho ProN', 'Noto Serif JP', 'Yu Mincho', serif;
+}
+
+[data-note-font='maru'] {
+  --note-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', sans-serif;
+}
+
+[data-note-font='hand'] {
+  --note-font: 'Klee One', Klee, 'UD Digi Kyokasho N-R', 'Hiragino Kaku Gothic ProN', sans-serif;
+}
+
+[data-note-size='small'] {
+  --note-size: 17px;
+}
+
+[data-note-size='medium'] {
+  --note-size: 21px;
+}
+
+[data-note-size='large'] {
+  --note-size: 27px;
+}
+
+[data-note-size='xlarge'] {
+  --note-size: 35px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -246,6 +317,30 @@ p {
       'memos'
       'toolbar';
   }
+}
+
+/* ノートを表示しているとき（.app の data-notes が置き換える範囲）。
+   置き換えられるパネルを消し、ノートのパネルがその場所に入る。 */
+
+.app[data-notes='full'] .calendar-pane,
+.app[data-notes='full'] .side-pane,
+.app[data-notes='calendar'] .calendar-pane,
+.app[data-notes='side'] .side-pane {
+  display: none;
+}
+
+.app[data-notes='full'] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.app[data-notes='calendar'] .note-pane {
+  order: -1;
+}
+
+/* カレンダーの部分だけ置き換えるときは時計側のツールバーで戻れるので、ノート側の戻るボタンは出さない */
+.app[data-notes='calendar'] .note-back {
+  display: none;
 }
 
 /* ---- カレンダー ---- */
@@ -688,6 +783,265 @@ p {
   margin-top: 12px;
 }
 
+/* ---- ノート ----
+   パネルの上部（タブ・ボタン）はアプリの配色、用紙（.paper）はノートの配色で描く。
+   用紙の文字の大きさは --note-size、1行の高さは --note-lh で、罫線もこの高さで引く。 */
+
+.note-pane {
+  gap: 8px;
+}
+
+.note-header,
+.note-tabs,
+.note-actions,
+.note-tab-list,
+.note-toolbar,
+.note-mode,
+.note-format-tools,
+.note-page-tools .inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-header {
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.note-tabs {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-tab {
+  max-width: 12em;
+  min-height: 44px;
+  padding: 0 1em;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--control);
+  color: var(--muted);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.note-tab[aria-selected='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* 編集中は引きずって並べ替えられる。ブラウザのスクロールに取られないよう touch-action を切る */
+.note-pane.editing .note-tab {
+  touch-action: none;
+  cursor: grab;
+}
+
+.note-tab.dragging {
+  opacity: 0.6;
+  transform: scale(1.05);
+}
+
+.note-toolbar {
+  gap: 6px 16px;
+}
+
+.note-mode .button {
+  background: transparent;
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.note-mode .button:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.note-mode .button:last-child {
+  border-radius: 0 999px 999px 0;
+}
+
+.note-mode .button[aria-pressed='true'] {
+  background: var(--control);
+  color: var(--text);
+}
+
+.button.tool[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.note-page-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.note-page-tools .field {
+  margin-top: 0;
+}
+
+.note-title {
+  flex: 1;
+  min-width: 0;
+  max-width: 20em;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+.note-paper {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 12px;
+  background: var(--note-bg);
+}
+
+/* 用紙。設定ダイアログの見本（.note-sample）も同じクラスで描く */
+.paper {
+  --note-lh: calc(var(--note-size) * 1.9);
+  position: relative;
+  background: var(--note-bg);
+  color: var(--note-text);
+  font-family: var(--note-font);
+  font-size: var(--note-size);
+  font-weight: 400;
+  line-height: var(--note-lh);
+}
+
+/* 罫線。各行の下端に引く。波線は色を変えられるよう、波形のマスクをかけた層で描く */
+.paper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+[data-note-rule='line'] .paper::before,
+.paper[data-note-rule='line']::before {
+  background: linear-gradient(to top, var(--note-rule) 1px, transparent 1px) 0 0 / 100% var(--note-lh);
+}
+
+[data-note-rule='wave'] .paper::before,
+.paper[data-note-rule='wave']::before {
+  --wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 8' preserveAspectRatio='xMidYMax meet'%3E%3Cpath d='M0 6 Q6 3 12 6 T24 6' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E");
+  background: var(--note-rule);
+  -webkit-mask: var(--wave) 0 0 / 24px var(--note-lh) repeat;
+  mask: var(--wave) 0 0 / 24px var(--note-lh) repeat;
+}
+
+.note-body {
+  min-height: 100%;
+  padding: var(--note-lh) 1em;
+  outline: none;
+  overflow-wrap: anywhere;
+  caret-color: var(--note-accent);
+}
+
+.note-source {
+  display: block;
+  width: 100%;
+  min-height: 100%;
+  padding: var(--note-lh) 1em;
+  border: 0;
+  outline: none;
+  resize: none;
+}
+
+/* 本文の各ブロック。行の高さを --note-lh の倍数にそろえ、罫線に乗るようにする */
+.paper :is(p, h1, h2, h3, h4, ul, ol, blockquote, pre, hr) {
+  margin: 0;
+}
+
+.paper h1 {
+  font-size: 1.6em;
+  line-height: calc(var(--note-lh) * 2);
+}
+
+.paper h2 {
+  font-size: 1.35em;
+}
+
+.paper h3 {
+  font-size: 1.15em;
+}
+
+.paper h4 {
+  font-size: 1em;
+}
+
+.paper :is(ul, ol) {
+  padding-left: 1.6em;
+}
+
+.paper li.task {
+  list-style: none;
+}
+
+.task-box {
+  width: 1.2em;
+  height: 1.2em;
+  margin: 0 0.35em 0 -1.6em;
+  vertical-align: -0.2em;
+  accent-color: var(--note-accent);
+}
+
+.paper a {
+  color: var(--note-link);
+}
+
+.paper s {
+  opacity: 0.6;
+}
+
+.paper code {
+  padding: 0 0.3em;
+  border-radius: 0.3em;
+  background: var(--note-code-bg);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.paper pre {
+  padding: 0 0.6em;
+  background: var(--note-code-bg);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  line-height: var(--note-lh);
+  white-space: pre-wrap;
+}
+
+.paper blockquote {
+  padding-left: 0.8em;
+  border-left: 0.25em solid var(--note-muted);
+  color: var(--note-muted);
+}
+
+.paper hr {
+  height: var(--note-lh);
+  border: 0;
+  background: linear-gradient(var(--note-muted) 0 0) center / 100% 2px no-repeat;
+}
+
+/* 小さい画面では縦に並ぶので、用紙に最低限の高さを持たせる */
+@media (max-width: 599px), (max-height: 599px) {
+  .note-paper {
+    min-height: 60vh;
+  }
+}
+
 /* ---- 設定ダイアログ ---- */
 
 .settings {
@@ -865,6 +1219,21 @@ p {
   font-size: 1.3rem;
   font-weight: 700;
   line-height: 1;
+}
+
+/* ノートの罫線・配色・書体の見本。用紙と同じ属性で描く */
+.note-sample {
+  --note-size: 15px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: calc(var(--note-size) * 1.9 * 2);
+  padding: 0 0.5em;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 .photo-preview {

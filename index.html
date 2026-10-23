@@ -17,8 +17,9 @@
 <link rel="apple-touch-icon" href="./android-touch-icon.png">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- crossorigin を付けて CORS で読み込む（Service Worker が中身の見えるレスポンスとしてキャッシュできるように） -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@700&display=swap" crossorigin>
-<link rel="stylesheet" href="./style.css?v=20261013">
+<!-- BIZ UDPGothic 700 はアプリ全体、その他（400 を含む）はノートの書体。使われた文字のぶんだけ読み込まれる -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho&family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@400;700&display=swap" crossorigin>
+<link rel="stylesheet" href="./style.css?v=20261023">
 </head>
 <body>
 <main class="app">
@@ -46,10 +47,14 @@
     </div>
     <div id="memos" class="memos" hidden></div>
     <footer class="toolbar">
+      <button type="button" id="open-notes" class="button subtle">ノート</button>
       <button type="button" id="fullscreen" class="button subtle">全画面</button>
       <button type="button" id="open-settings" class="button subtle">設定</button>
     </footer>
   </section>
+
+  <!-- ノート。中身は notes-ui.js が組み立てる。表示中は .app に data-notes（置き換える範囲）が付く -->
+  <section id="note-pane" class="pane note-pane" hidden></section>
 </main>
 
 <dialog id="settings-dialog" class="settings">
@@ -67,6 +72,6 @@
   <footer class="settings-footer"></footer>
 </dialog>
 
-<script type="module" src="./js/main.js?v=20261013"></script>
+<script type="module" src="./js/main.js?v=20261023"></script>
 </body>
 </html>

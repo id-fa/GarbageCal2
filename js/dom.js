@@ -22,3 +22,10 @@ export function h(tag, attrs, ...children) {
 export function svg(tag, attrs, ...children) {
   return build(document.createElementNS(SVG_NS, tag), attrs, children);
 }
+
+// 文字列をファイルとしてダウンロードさせる（設定やノートのエクスポート）
+export function downloadText(fileName, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  h('a', { href: url, download: fileName }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
