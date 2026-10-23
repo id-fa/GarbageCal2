@@ -21,6 +21,8 @@
   --on-accent: #fff;
   --garbage-bg: #ffe9a8;
   --garbage-text: #4d3a00;
+  --secondary-bg: #d6ebd0;
+  --secondary-text: #1f4a1f;
   --control: #ece7dc;
 }
 
@@ -37,6 +39,8 @@
     --accent: #d9536b;
     --garbage-bg: #5c4700;
     --garbage-text: #ffe9a8;
+    --secondary-bg: #24482a;
+    --secondary-text: #d6ebd0;
     --control: #2b2f36;
   }
 }
@@ -53,6 +57,8 @@
   --accent: #d9536b;
   --garbage-bg: #5c4700;
   --garbage-text: #ffe9a8;
+  --secondary-bg: #24482a;
+  --secondary-text: #d6ebd0;
   --control: #2b2f36;
 }
 
@@ -69,6 +75,8 @@
   --on-accent: #fff8e8;
   --garbage-bg: #efcb72;
   --garbage-text: #4a3500;
+  --secondary-bg: #cfd9a8;
+  --secondary-text: #33411a;
   --control: #e4d6b6;
 }
 
@@ -85,6 +93,8 @@
   --on-accent: #24170b;
   --garbage-bg: #5a4410;
   --garbage-text: #f6dfa0;
+  --secondary-bg: #3f4a1e;
+  --secondary-text: #dfe6b8;
   --control: #3a2e23;
 }
 
@@ -649,7 +659,13 @@ p {
   color: var(--muted);
 }
 
-/* 文言を大きくする設定（weeklyLarge / noneTextLarge）のとき */
+/* 曜日ごとの表示（セカンダリ）。ごみ情報の下に別の行として出す。大きさの設定はごみ情報と同じ */
+.garbage.secondary {
+  background: var(--secondary-bg);
+  color: var(--secondary-text);
+}
+
+/* 文言を大きくする設定（weeklyLarge / noneTextLarge / secondary.large）のとき */
 .garbage.large {
   font-size: min(6.8cqw, 6.2cqh);
 }

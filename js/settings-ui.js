@@ -481,6 +481,48 @@ export function setupSettingsDialog({
     );
   }
 
+  function secondarySection() {
+    const { secondary } = draft;
+    return section(
+      '曜日ごとの表示（セカンダリ）',
+      h(
+        'p',
+        { class: 'hint' },
+        'ごみ情報とは別の行に、曜日ごとの文言を表示します（例: デイサービスの日）。空欄の曜日は何も表示しません。',
+      ),
+      checkField(secondary, 'enabled', '曜日ごとの表示を使う'),
+      group(
+        '曜日ごとの文言',
+        null,
+        h(
+          'div',
+          { class: 'weekday-fields' },
+          WEEKDAYS.map((name, i) => labeled(`${name}曜`, textField(secondary.weekly, i))),
+        ),
+        checkField(secondary, 'large', '大きい文字で表示する'),
+        checkField(secondary, 'extraLarge', '大きい文字をさらに大きくする'),
+      ),
+      group(
+        '表示しない期間',
+        '長期の休みなど。この期間はどの曜日も表示しません。「毎年」にすると年は無視して月日だけで判定します。',
+        listEditor(secondary.closures, {
+          addLabel: '期間を追加',
+          createItem: () => ({ from: '', to: '', yearly: true }),
+          renderRow: (closure) => [
+            h(
+              'div',
+              { class: 'inline' },
+              dateField(closure, 'from', '開始日'),
+              '〜',
+              dateField(closure, 'to', '終了日'),
+              checkField(closure, 'yearly', '毎年'),
+            ),
+          ],
+        }),
+      ),
+    );
+  }
+
   function memoSection() {
     return section(
       'メモ',
@@ -818,6 +860,7 @@ export function setupSettingsDialog({
   function render(message = '') {
     body.replaceChildren(
       garbageSection(),
+      secondarySection(),
       memoSection(),
       photoSection(),
       notesSection(),

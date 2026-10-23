@@ -2,7 +2,7 @@
 
 import { WEEKDAYS, addDays, dateKey, daysInMonth, nthOfMonth, weekdayOf } from './dates.js';
 import { h, svg } from './dom.js';
-import { garbageInfo } from './garbage.js';
+import { garbageInfo, secondaryInfo } from './garbage.js';
 import { holidayName } from './holidays.js';
 
 function dayColorClass(date, holiday) {
@@ -90,6 +90,13 @@ function garbageBadge(info) {
   return h('p', { class: classes.filter(Boolean).join(' ') }, info.text);
 }
 
+// 曜日ごとの表示（セカンダリ）。ごみ情報の下に別の行として出す
+function secondaryBadge(info) {
+  if (!info) return null;
+  const classes = ['garbage', 'secondary', info.large && 'large', info.extraLarge && 'extra-large'];
+  return h('p', { class: classes.filter(Boolean).join(' ') }, info.text);
+}
+
 function weekdayLabel(date, display) {
   const weekday = weekdayOf(date);
   const nth = display.nthWeekdays.includes(weekday) ? `第${nthOfMonth(date)}` : '';
@@ -97,7 +104,7 @@ function weekdayLabel(date, display) {
 }
 
 export function renderInfo(el, today, hour, settings) {
-  const { display, garbage } = settings;
+  const { display, garbage, secondary } = settings;
   const tomorrow = addDays(today, 1);
   // 就寝前は日付が変わっていても「今日」の感覚のままなので、深夜は表現を変える
   const isLateNight = hour < display.midnightHour;
@@ -118,6 +125,7 @@ export function renderInfo(el, today, hour, settings) {
       ),
       todayHoliday && h('p', { class: 'info-holiday' }, todayHoliday),
       garbageBadge(todayGarbage),
+      secondaryBadge(secondaryInfo(secondary, today)),
     ),
   ];
 
@@ -139,6 +147,7 @@ export function renderInfo(el, today, hour, settings) {
           tomorrowHoliday && h('span', { class: 'info-holiday' }, `・${tomorrowHoliday}`),
         ),
         garbageBadge(garbageInfo(garbage, tomorrow)),
+        secondaryBadge(secondaryInfo(secondary, tomorrow)),
       ),
     );
   }

@@ -1,13 +1,14 @@
 // ごみ収集の判定。設定（settings.garbage）と日付から、その日の表示文言を決める。
+// ごみ情報とは別の行に出す曜日ごとの表示（settings.secondary）もここで判定する。
 
 import { dateKey, nthOfMonth, weekdayOf } from './dates.js';
 
-// その日が収集休み期間に入っていれば、その期間を返す
-export function findClosure(garbage, date) {
+// その日が休み期間（closures）に入っていれば、その期間を返す
+export function findClosure({ closures }, date) {
   const key = dateKey(date);
   const monthDay = key.slice(5);
   return (
-    garbage.closures.find(({ from, to, yearly }) => {
+    closures.find(({ from, to, yearly }) => {
       if (!yearly) return from <= key && key <= to;
       // 毎年繰り返す期間は月日だけで比べる（年末年始のように年をまたぐ指定もある）
       const start = from.slice(5);
@@ -57,4 +58,14 @@ export function garbageInfo(garbage, date) {
     large: garbage.weeklyLarge && Boolean(weekly),
     extraLarge: garbage.weeklyLarge && garbage.extraLarge && Boolean(weekly),
   };
+}
+
+// ごみ情報とは別の行に出す、その日の曜日ごとの表示 { text, large, extraLarge }。
+// 使わない設定・文言が未設定の曜日・表示しない期間のときは null。
+export function secondaryInfo(secondary, date) {
+  if (!secondary.enabled) return null;
+  if (findClosure(secondary, date)) return null;
+  const text = secondary.weekly[weekdayOf(date)];
+  if (!text) return null;
+  return { text, large: secondary.large, extraLarge: secondary.large && secondary.extraLarge };
 }

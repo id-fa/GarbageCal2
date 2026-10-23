@@ -53,6 +53,18 @@ export function defaultSettings() {
       // 収集休み期間: { from, to, yearly, label }
       closures: [],
     },
+    // ごみ情報とは別の行に出す、曜日ごとの表示（デイサービスの日など）
+    secondary: {
+      enabled: false,
+      // 日曜〜土曜の表示文言。空欄の曜日は何も表示しない
+      weekly: ['', '', '', '', '', '', ''],
+      // 大きい文字で表示する
+      large: false,
+      // 大きい文字をさらに大きくする
+      extraLarge: false,
+      // 表示しない期間: { from, to, yearly }
+      closures: [],
+    },
     // { text, until }  until の日まで表示（空なら常に表示）
     memos: [],
     // カレンダーを小さくして写真を表示する。写真そのものは設定に含めず、photo.js が IndexedDB に持つ
@@ -95,10 +107,29 @@ const intSet = (value, min, max) =>
     (a, b) => a - b,
   );
 
+// 期間のリスト { from, to, yearly, label }。日付が読めない行は捨てる
+const closures = (value) =>
+  list(value)
+    .map((closure) => {
+      // 片方しか入力されていなければ1日だけの期間として扱う
+      const from = isDateKey(closure?.from) ? closure.from : closure?.to;
+      const to = isDateKey(closure?.to) ? closure.to : from;
+      const yearly = bool(closure?.yearly, false);
+      const swap = !yearly && from > to;
+      return {
+        from: swap ? to : from,
+        to: swap ? from : to,
+        yearly,
+        label: text(closure?.label, 20),
+      };
+    })
+    .filter((closure) => isDateKey(closure.from) && isDateKey(closure.to));
+
 // 外から来た値（保存データ・インポート・URL）を、欠けや不正を既定値で埋めた設定にする
 export function normalizeSettings(raw) {
   const defaults = defaultSettings();
   const garbage = raw?.garbage ?? {};
+  const secondary = raw?.secondary ?? {};
   const display = raw?.display ?? {};
   const photo = raw?.photo ?? {};
   const notes = raw?.notes ?? {};
@@ -121,21 +152,15 @@ export function normalizeSettings(raw) {
           offText: text(rule?.offText, 40),
         }))
         .filter((rule) => rule.text),
-      closures: list(garbage.closures)
-        .map((closure) => {
-          // 片方しか入力されていなければ1日だけの休みとして扱う
-          const from = isDateKey(closure?.from) ? closure.from : closure?.to;
-          const to = isDateKey(closure?.to) ? closure.to : from;
-          const yearly = bool(closure?.yearly, false);
-          const swap = !yearly && from > to;
-          return {
-            from: swap ? to : from,
-            to: swap ? from : to,
-            yearly,
-            label: text(closure?.label, 20),
-          };
-        })
-        .filter((closure) => isDateKey(closure.from) && isDateKey(closure.to)),
+      closures: closures(garbage.closures),
+    },
+    secondary: {
+      enabled: bool(secondary.enabled, defaults.secondary.enabled),
+      weekly: defaults.secondary.weekly.map((_, i) => text(secondary.weekly?.[i], 40)),
+      large: bool(secondary.large, defaults.secondary.large),
+      extraLarge: bool(secondary.extraLarge, defaults.secondary.extraLarge),
+      // 表示しない期間は何も出さないので名称は持たない
+      closures: closures(secondary.closures).map(({ from, to, yearly }) => ({ from, to, yearly })),
     },
     memos: list(raw?.memos)
       .map((memo) => ({
