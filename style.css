@@ -349,7 +349,7 @@ p {
 }
 
 /* カレンダーの部分だけ置き換えるときは時計側のツールバーで戻れるので、ノート側の戻るボタンは出さない */
-.app[data-notes='calendar'] .note-back {
+.app[data-notes='calendar'] .note-footer {
   display: none;
 }
 
@@ -799,6 +799,11 @@ p {
   margin-top: 12px;
 }
 
+/* ノートへの切り替えは左下。ノート側の戻るボタン（.note-footer）も同じ左下に置く */
+.toolbar .note-toggle {
+  margin-right: auto;
+}
+
 /* ---- ノート ----
    パネルの上部（タブ・ボタン）はアプリの配色、用紙（.paper）はノートの配色で描く。
    用紙の文字の大きさは --note-size、1行の高さは --note-lh で、罫線もこの高さで引く。 */
@@ -824,6 +829,12 @@ p {
 .note-header {
   justify-content: space-between;
   gap: 8px;
+}
+
+.note-footer {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
 }
 
 .note-tabs {

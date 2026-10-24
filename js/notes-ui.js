@@ -151,11 +151,13 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
       'header',
       { class: 'note-header' },
       h('div', { class: 'note-tabs' }, tabList, addButton),
-      h('div', { class: 'note-actions' }, sizeButton, editButton, backButton),
+      h('div', { class: 'note-actions' }, sizeButton, editButton),
     ),
     toolbar,
     pageTools,
     paper,
+    // 戻るボタンは時計側の「ノート」ボタンと同じ左下に置く
+    h('footer', { class: 'note-footer' }, backButton),
   );
 
   function fileInput(accept, handle) {
