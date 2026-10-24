@@ -77,4 +77,4 @@ console.log(computeHolidays(2026));
 
 ### Service Worker
 
-`sw.js` は同一オリジンの GET を network-first（4 秒でキャッシュにフォールバック）で扱うので、オンラインなら常に最新ファイルが使われる。GET 以外（時刻同期の HEAD）には手を出さない。**ファイルを追加・削除したら `ASSETS` を更新し、`CACHE` の番号を上げる。** `index.html` の `style.css` / `main.js` の `?v=` も合わせて更新する。
+`sw.js` は同一オリジンの GET を network-first（4 秒でキャッシュにフォールバック）で扱うので、オンラインなら常に最新ファイルが使われる。同一オリジンの取得は `cache: 'no-cache'` でブラウザの HTTP キャッシュに毎回再検証させるので、`?v=` の付かない `import` 先のモジュールや `syukujitsu.csv` も SW 有効後は最新になる（`?v=` は SW が効く前の初回読み込みのため）。GET 以外（時刻同期の HEAD）には手を出さない。**ファイルを追加・削除したら `ASSETS` を更新し、`CACHE` の番号を上げる。** `index.html` の `style.css` / `main.js` の `?v=` も合わせて更新する。

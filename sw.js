@@ -2,7 +2,7 @@
 // アプリのファイルを更新したら CACHE の番号を上げる（オンラインなら network-first で
 // 常に新しいファイルを取りに行くので、上げ忘れても次回オンライン時に最新になる）。
 
-const CACHE = 'sgcalendar-v4';
+const CACHE = 'sgcalendar-v5';
 const FONT_CACHE = 'sgcalendar-fonts';
 const NETWORK_TIMEOUT_MS = 4000;
 
@@ -73,11 +73,23 @@ function isCacheable(response) {
   return response.status === 200 && response.type !== 'opaque';
 }
 
+// ?v= を除いた URL をキャッシュのキーにする。インストール時に入れた './style.css' と
+// 実行時の './style.css?v=…' が別エントリとして並び、オフライン時に古い方が返るのを防ぐ。
+function cacheKey(request) {
+  const url = new URL(request.url);
+  url.search = '';
+  return url.href;
+}
+
 // アプリ本体: まずネットワーク、だめならキャッシュ。回線が極端に遅いときも待たせない。
+// cache: 'no-cache' でブラウザの HTTP キャッシュに毎回再検証（ETag）させる。index.html の
+// ?v= は style.css と main.js にしか付かないので、main.js から import されるモジュールや
+// syukujitsu.csv が古いまま残らないようにするため。オフラインなら fetch が失敗して
+// 下のキャッシュに落ちるので、オフライン動作は変わらない。
 async function networkFirst(request) {
   const cache = await caches.open(CACHE);
-  const network = fetch(request).then((response) => {
-    if (isCacheable(response)) cache.put(request, response.clone());
+  const network = fetch(request, { cache: 'no-cache' }).then((response) => {
+    if (isCacheable(response)) cache.put(cacheKey(request), response.clone());
     return response;
   });
   const timeout = new Promise((_, reject) => setTimeout(reject, NETWORK_TIMEOUT_MS));
