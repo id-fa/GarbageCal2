@@ -1,7 +1,8 @@
 // ノート本文（Markdown）の読み書き。
 // ノート用紙に書く感覚に合わせ、1行を1行として扱う（改行はそのまま改行、空行は空の行として残る）。
 // 対応する書き方: # 見出し（#〜####）、- 箇条書き、1. 番号付き、- [ ] チェック、> 引用、--- 区切り線、
-// ``` コード、**太字**、*斜体*、~~取り消し~~、`コード`、[表示名](https://…)、素の URL。
+// ``` コード、**太字**、*斜体*、~~取り消し~~、`コード`、[表示名](https://…)、素の URL、
+// 手書き画像 ![手書き](data:image/png;base64,…)（1行まるごと。画像は data: の PNG/WebP/JPEG だけ）。
 // 入れ子の箇条書きは行頭を2文字以上下げる。記号を文字として書きたいときは \ を前に付ける。
 //
 // 見たまま編集（contenteditable）の DOM から Markdown に戻す domToMarkdown() もここにある。
@@ -19,6 +20,13 @@ const FENCE = /^```/;
 const LINK = /^\[((?:\\.|[^\]\\])*)\]\((https?:\/\/[^\s)]+)\)/;
 const URL = /^https?:\/\/[^\s)]+/;
 const ASCII_PUNCT = /[!-/:-@[-`{-~]/;
+// 手書き画像の行。外部の URL は読みに行かず、data: に埋め込まれた画像だけを受け付ける
+export const INK_IMAGE_LINE = /^!\[([^\]\n]*)\]\((data:image\/(?:png|webp|jpeg);base64,[A-Za-z0-9+/=]+)\)[ \t]*$/;
+export const INK_ALT = '手書き';
+
+export function inkImageLine(src) {
+  return `![${INK_ALT}](${src})`;
+}
 
 // ---- Markdown → ブロック構造 ----
 
@@ -44,6 +52,12 @@ export function parseBlocks(lines, offset = 0) {
     const heading = line.match(HEADING);
     if (heading) {
       blocks.push({ type: 'heading', level: heading[1].length, inline: parseInline(heading[2]) });
+      i += 1;
+      continue;
+    }
+    const image = line.match(INK_IMAGE_LINE);
+    if (image) {
+      blocks.push({ type: 'image', alt: image[1], src: image[2] });
       i += 1;
       continue;
     }
@@ -261,11 +275,22 @@ function renderItem(item) {
   );
 }
 
+// 手書き画像の箱。編集中もブラウザに中身を触らせない（contenteditable=false）
+export function renderInk(src, alt = INK_ALT) {
+  return h(
+    'figure',
+    { class: 'note-ink', contenteditable: 'false' },
+    h('img', { src, alt, draggable: 'false' }),
+  );
+}
+
 function renderBlocks(blocks) {
   return blocks.map((block) => {
     switch (block.type) {
       case 'blank':
         return h('p', { class: 'blank' }, h('br'));
+      case 'image':
+        return renderInk(block.src, block.alt);
       case 'heading':
         return h(`h${block.level}`, null, withContent(renderInline(block.inline)));
       case 'hr':
@@ -303,7 +328,7 @@ export function toggleTask(text, lineIndex) {
 // （div、b、i、strike、span など）も受け付ける。
 
 const BLOCK_TAGS = new Set([
-  'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'HR', 'PRE', 'TABLE', 'SECTION', 'ARTICLE',
+  'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'HR', 'PRE', 'TABLE', 'SECTION', 'ARTICLE', 'FIGURE',
 ]);
 
 // 文字として書かれた記号が書式として解釈されないようにする
@@ -441,6 +466,13 @@ function blockToLines(el, lines, prefix) {
       for (const line of el.textContent.replace(/\n$/, '').split('\n')) lines.push(prefix + line);
       lines.push(`${prefix}\`\`\``);
       return;
+    case 'FIGURE': {
+      // 手書き画像（renderInk() が作った箱）。それ以外の figure は中身だけ残す
+      const src = el.querySelector(':scope > img')?.getAttribute('src') ?? '';
+      if (INK_IMAGE_LINE.test(inkImageLine(src))) lines.push(prefix + inkImageLine(src));
+      else blocksToLines(el, lines, prefix);
+      return;
+    }
     default:
       blocksToLines(el, lines, prefix);
   }

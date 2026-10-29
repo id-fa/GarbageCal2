@@ -1,13 +1,17 @@
 // ノート画面。タブでページを切り替え、「編集」を押すと見たまま（contenteditable）か
 // ソース（textarea）で本文を書き換えられる。本文は notes.js を通じて localStorage に保存し、
 // 見た目（罫線・配色・書体・文字の大きさ）は設定から applyDesign() で受け取る。
-// 閲覧中はチェック項目のオン／オフだけができる。
+// 閲覧中はチェック項目のオン／オフと、手書き画像のタップ（元の大きさで表示）だけができる。
+// 手書き画像は編集中の「手書き」で描き（ink.js のパッド）、本文に ![手書き](data:…) の行として入る。
 
 import { downloadText, h } from './dom.js';
-import { domToMarkdown, renderMarkdown, toggleTask } from './markdown.js';
+import { createInkPad, createInkViewer } from './ink.js';
+import { INK_IMAGE_LINE, domToMarkdown, inkImageLine, renderInk, renderMarkdown, toggleTask } from './markdown.js';
 import {
   DEFAULT_PAGE_TITLE,
+  MAX_INK_LENGTH,
   canAddPage,
+  inkOf,
   loadNotes,
   newPage,
   normalizeText,
@@ -107,11 +111,14 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
     tool('元に戻す', () => exec('undo')),
   ];
   const visualTools = h('div', { class: 'note-format-tools' }, formatButtons);
+  // 手書きは見たまま・ソースのどちらでも使える
+  const inkButton = tool('✎ 手書き', () => editInk());
   const toolbar = h(
     'div',
     { class: 'note-toolbar', hidden: true },
     h('div', { class: 'note-mode', role: 'group', 'aria-label': '編集のしかた' }, modeButtons),
     visualTools,
+    inkButton,
   );
 
   const titleInput = h('input', {
@@ -159,6 +166,9 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
     // 戻るボタンは時計側の「ノート」ボタンと同じ左下に置く
     h('footer', { class: 'note-footer' }, backButton),
   );
+  // 手書きのパッドと拡大表示はパネルの中に置く（パネル内の操作として放置の判定が延びる）
+  const inkPad = createInkPad({ container: pane, maxLength: MAX_INK_LENGTH });
+  const inkViewer = createInkViewer({ container: pane });
 
   function fileInput(accept, handle) {
     const input = h('input', { type: 'file', accept, hidden: true });
@@ -378,6 +388,69 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
     markDirty();
   }
 
+  // ---- 手書き ----
+
+  // el を含む本文の最上位ブロック。見たまま編集で手書き画像を差し込む位置に使う
+  function topLevelBlock(el) {
+    let node = el;
+    while (node && node.parentElement !== body) node = node.parentElement;
+    return node && node !== body ? node : null;
+  }
+
+  function currentInkSrc() {
+    if (editor === 'visual') return body.querySelector('figure.note-ink > img')?.getAttribute('src') ?? null;
+    return inkOf(source.value);
+  }
+
+  // パッドを開き、結果を本文に反映する。画像があれば描き直し、無ければカーソルの位置に入れる
+  async function editInk() {
+    if (!editing) return;
+    // パッドを開くとカーソル位置が失われるので先に控えておく
+    const anchor = editor === 'visual' ? topLevelBlock(selectionElement()) : null;
+    const cursor = editor === 'source' ? source.selectionStart : 0;
+    const result = await inkPad.open(currentInkSrc());
+    if (!result || !editing) return;
+    if (editor === 'visual') applyInkToDom(result, anchor);
+    else applyInkToSource(result, cursor);
+  }
+
+  function applyInkToDom(result, anchor) {
+    const figure = body.querySelector('figure.note-ink');
+    if (result.action === 'remove') {
+      figure?.remove();
+    } else if (figure) {
+      figure.replaceWith(renderInk(result.src));
+    } else {
+      const inserted = renderInk(result.src);
+      if (anchor) anchor.after(inserted);
+      else body.append(inserted);
+      // 画像の下に続けて書けるよう、最後になるなら空の行を足す
+      if (!inserted.nextSibling) inserted.after(h('p', null, h('br')));
+    }
+    markDirty();
+  }
+
+  function applyInkToSource(result, cursor) {
+    const text = source.value;
+    const line = result.action === 'remove' ? null : inkImageLine(result.src);
+    const found = text.match(new RegExp(INK_IMAGE_LINE.source, 'm'));
+    let next;
+    if (found) {
+      const start = found.index;
+      const end = start + found[0].length;
+      next = line === null ? text.slice(0, start) + text.slice(end).replace(/^\n/, '') : text.slice(0, start) + line + text.slice(end);
+    } else {
+      if (line === null) return;
+      // カーソルのある行の下に入れる
+      const lineEnd = text.indexOf('\n', cursor);
+      const head = lineEnd === -1 ? text : text.slice(0, lineEnd);
+      const tail = lineEnd === -1 ? '' : text.slice(lineEnd);
+      next = head + (head ? '\n' : '') + line + tail;
+    }
+    source.value = next;
+    scheduleCommit();
+  }
+
   // ---- ページの操作 ----
 
   function addPage() {
@@ -548,6 +621,15 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
     save();
   });
 
+  // 手書き画像のタップ。閲覧中は元の大きさで表示し、編集中はパッドで描き直す
+  body.addEventListener('click', (e) => {
+    const figure = e.target instanceof Element ? e.target.closest('figure.note-ink') : null;
+    const src = figure && body.contains(figure) ? figure.querySelector(':scope > img')?.getAttribute('src') : null;
+    if (!src) return;
+    if (editing) editInk();
+    else inkViewer.show(src);
+  });
+
   source.addEventListener('input', scheduleCommit);
   document.addEventListener('selectionchange', updateToolState);
   // 画面が隠れる・閉じられるときに編集中の内容を取りこぼさない
@@ -565,6 +647,8 @@ export function setupNotePane({ pane, onSizeChange, onClose, onEditingChange }) 
       renderAll();
     },
     hide() {
+      inkPad.close();
+      inkViewer.close();
       if (editing) finishEditing();
       pane.hidden = true;
     },

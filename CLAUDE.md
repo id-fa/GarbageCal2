@@ -74,6 +74,7 @@ console.log(computeHolidays(2026));
 - 表示中は `.app` に `data-notes="<area>"` が付き、置き換えられるパネルが消える。編集中は設定にかかわらず `full`（`main.js` の `applyNotesArea()`）。状態（開いているか・放置タイマー）は `main.js`、ページ・編集中かどうかは `notes-ui.js` が持つ。`render()`（毎分）はノートに触らない。
 - Markdown は `markdown.js`。1行＝1行（空行は空の行、改行はそのまま改行）で、一般的な Markdown のように段落をまとめない。描画は `renderMarkdown()`（`h()` で組み立て、`innerHTML` は使わない）。見たまま編集は contenteditable で、`domToMarkdown()` が DOM（ブラウザが作る `div` `b` `i` 等も含む）を本文に戻す。記号を文字として書いた箇所は `\` でエスケープして往復させる。閲覧中のチェックは `toggleTask()` で該当行だけ書き換える。
 - 編集中は入力のたびに（少し遅らせて）保存する。見たまま編集では DOM を描き直さず、ページ切り替え・モード切り替え・完了のときだけ `commit()` で本文に戻す。
+- 手書き画像は本文の `![手書き](data:image/png;base64,…)` 行（`markdown.js` の `INK_IMAGE_LINE`。1行まるごと、`data:` の画像だけ）。描くパッドと拡大表示は `ink.js` で、本文への差し込み・置き換え・削除は `notes-ui.js`（見たまま編集は `figure.note-ink` を DOM 操作、ソース編集は文字列操作）。1ページ1画像と行の長さの上限（`MAX_INK_LENGTH`）は `notes.js` の `normalizeText()` が守る（本文の上限とは別枠）。画像は描いたときの画素数のまま保持し、描き直すときも同じ大きさで開く。用紙は常に白、ペン色は `ink.js` の `INK_COLORS`。
 
 ### Service Worker
 

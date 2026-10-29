@@ -988,7 +988,7 @@ p {
 }
 
 /* 本文の各ブロック。行の高さを --note-lh の倍数にそろえ、罫線に乗るようにする */
-.paper :is(p, h1, h2, h3, h4, ul, ol, blockquote, pre, hr) {
+.paper :is(p, h1, h2, h3, h4, ul, ol, blockquote, pre, hr, figure) {
   margin: 0;
 }
 
@@ -1060,6 +1060,26 @@ p {
   height: var(--note-lh);
   border: 0;
   background: linear-gradient(var(--note-muted) 0 0) center / 100% 2px no-repeat;
+}
+
+/* 手書き画像の縮小表示。用紙の半分の幅（狭いときは用紙いっぱい）で、タップすると元の大きさで見られる */
+.note-ink {
+  padding: calc(var(--note-lh) / 2) 0;
+}
+
+.note-ink img {
+  display: block;
+  width: 50%;
+  min-width: min(100%, 320px);
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--note-rule);
+  border-radius: 8px;
+  cursor: zoom-in;
+}
+
+.note-pane.editing .note-ink img {
+  cursor: pointer;
 }
 
 /* 小さい画面では縦に並ぶので、用紙に最低限の高さを持たせる */
@@ -1368,4 +1388,103 @@ p {
 
 .status dd {
   margin: 0;
+}
+
+/* ---- 手書きパッドと拡大表示 ----
+   どちらも画面いっぱいのダイアログ。パッドの用紙（canvas）は描いたときの大きさを保ったまま
+   object-fit: contain で収めるので、向きが変わっても画像の大きさは変わらない。 */
+
+.ink-pad,
+.ink-viewer {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.ink-pad[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.ink-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+
+.ink-tools .notice {
+  margin: 0 0 0 8px;
+}
+
+.ink-tools .spacer {
+  flex: 1;
+}
+
+.ink-colors {
+  display: flex;
+  gap: 8px;
+  margin-right: 8px;
+}
+
+/* ペンの色。選んでいる色は輪で囲む */
+.ink-color {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ink-color[aria-pressed='true'] {
+  box-shadow: 0 0 0 3px var(--text);
+}
+
+.ink-canvas-box {
+  flex: 1;
+  min-height: 0;
+  padding: 0 8px 8px;
+}
+
+.ink-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.ink-viewer[open] {
+  display: grid;
+  place-items: center;
+  background: var(--text);
+}
+
+.ink-view {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: zoom-out;
+}
+
+.ink-viewer-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
 }
